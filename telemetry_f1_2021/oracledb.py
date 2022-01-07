@@ -54,6 +54,16 @@ class OracleJSONDatabaseConnection:
         self.pool.release(connection)
 
 
+    def get_count(self, collection_name):
+        connection = self.pool.acquire()
+        soda = connection.getSodaDatabase()
+        x_collection = soda.createCollection(collection_name)
+        count = x_collection.find().count()
+        print('{}'.format(count))
+        self.pool.release(connection)
+        return count
+
+
 
 def test_class():
     object = OracleJSONDatabaseConnection()
