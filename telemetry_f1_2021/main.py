@@ -66,8 +66,8 @@ def main():
 
 def save_oracle_db(dbhandler, dict_object):
     res = dbhandler.insert('f1_2021_weather', dict_object)
-    if res == 0:
-        print('INSERT {} ERR'.format(dict_object['timestamp']))
+    if res == 0: # error
+        pass
     else:
         print('INSERT {} OK'.format(dict_object['timestamp']))
 
