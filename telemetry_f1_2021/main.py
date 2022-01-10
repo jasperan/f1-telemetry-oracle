@@ -12,6 +12,15 @@ from oracledb import OracleJSONDatabaseConnection
 # using time module
 import time
 
+import argparse
+
+cli_parser = argparse.ArgumentParser(
+    description="Script that records telemetry F1 2021 weather data into an Autonomous JSON Database"
+)
+
+cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
+args = cli_parser.parse_args()
+
 
 def _get_listener():
     try:
@@ -68,6 +77,7 @@ def save_packet(dbhandler, packet, timestamp):
     assert isinstance(packet, PacketSessionData)
     dict_object = packet.to_dict()
     dict_object['timestamp'] = int(timestamp) # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
+    dict_object['gamehost'] = args.gamehost
     #print('Store {}'.format(json.dumps(dict_object, indent=2)))
 
     # Load into Oracle DB
