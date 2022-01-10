@@ -67,7 +67,7 @@ def save_oracle_db(dbhandler, dict_object):
 def save_packet(dbhandler, packet, timestamp):
     assert isinstance(packet, PacketSessionData)
     dict_object = packet.to_dict()
-    dict_object['timestamp'] = timestamp
+    dict_object['timestamp'] = int(timestamp) # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
     #print('Store {}'.format(json.dumps(dict_object, indent=2)))
 
     # Load into Oracle DB
