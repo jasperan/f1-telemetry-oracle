@@ -1,10 +1,13 @@
+import datetime
 import copy
 import json
 import pickle
 from pathlib import Path
 
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData
+from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
+from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
+
 from telemetry_f1_2021.listener import TelemetryListener
 
 from oracledb import OracleJSONDatabaseConnection
@@ -46,11 +49,33 @@ def main():
             packet = listener.get()
             # ts stores the time in seconds
             ts = time.time()
-            
+            #print('{}'.format(PacketSessionData.__class__))
             if isinstance(packet, PacketSessionData):
-                #print(packet)
-                # packet.m_weather_forecast_samples
-                save_packet(dbhandler, packet, ts)
+                save_packet_weather(dbhandler, packet, ts)
+                save_packet('PacketSessionData', dbhandler, packet)
+            elif isinstance(packet, PacketMotionData):
+                save_packet('PacketMotionData', dbhandler, packet)
+            elif isinstance(packet, PacketLapData):
+                save_packet('PacketLapData', dbhandler, packet)
+            elif isinstance(packet, PacketEventData):
+                save_packet('PacketEventData', dbhandler, packet)
+            elif isinstance(packet, PacketParticipantsData):
+                save_packet('PacketParticipantsData', dbhandler, packet)
+            elif isinstance(packet, PacketCarSetupData):
+                save_packet('PacketCarSetupData', dbhandler, packet)
+            elif isinstance(packet, PacketCarTelemetryData):
+                save_packet('PacketCarTelemetryData', dbhandler, packet)
+            elif isinstance(packet, PacketCarStatusData):
+                save_packet('PacketCarStatusData', dbhandler, packet)
+            elif isinstance(packet, PacketFinalClassificationData):
+                save_packet('PacketFinalClassificationData', dbhandler, packet)
+            elif isinstance(packet, PacketLobbyInfoData):
+                save_packet('PacketLobbyInfoData', dbhandler, packet)
+            elif isinstance(packet, PacketCarDamageData):
+                save_packet('PacketCarDamageData', dbhandler, packet)
+            elif isinstance(packet, PacketSessionHistoryData):
+                save_packet('PacketSessionHistoryData', dbhandler, packet)
+            
 
     except KeyboardInterrupt:
         print('Stop the car, stop the car Checo.')
@@ -60,29 +85,44 @@ def main():
 
     dbhandler.close_pool()
 
-    
 
 
 
-def save_oracle_db(dbhandler, dict_object):
-    res = dbhandler.insert('f1_2021_weather', dict_object)
+def save_weather_object(collection_name, dbhandler, dict_object):
+    res = dbhandler.insert(collection_name, dict_object)
     if res == 0: # error
         pass
     else:
-        print('INSERT {} OK'.format(dict_object['timestamp']))
+        print('{} | INSERT {} OK'.format(datetime.datetime.now(), dict_object['timestamp']))
 
 
 
-def save_packet(dbhandler, packet, timestamp):
-    assert isinstance(packet, PacketSessionData)
+def save_oracle_db(collection_name, dbhandler, dict_object):
+    res = dbhandler.insert(collection_name, dict_object)
+    if res == 0: # error
+        pass
+    elif res == -1:
+        print('{} | INSERT INTO {} STRUCTURAL ERROR'.format(datetime.datetime.now(), collection_name))
+    else:
+        print('{} | INSERT INTO {} OK'.format(datetime.datetime.now(), collection_name))
+
+
+
+# method used only for weather data for AIHack2022
+def save_packet_weather(dbhandler, packet, timestamp):
     dict_object = packet.to_dict()
     dict_object['timestamp'] = int(timestamp) # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
     dict_object['gamehost'] = args.gamehost
-    #print('Store {}'.format(json.dumps(dict_object, indent=2)))
 
     # Load into Oracle DB
-    save_oracle_db(dbhandler, dict_object)
+    save_weather_object('f1_2021_weather', dbhandler, dict_object)
 
+
+
+def save_packet(collection_name, dbhandler, packet):
+    dict_object = packet.to_dict()
+    # Load into Oracle DB
+    save_oracle_db(collection_name, dbhandler, dict_object)
 
 
 
@@ -122,6 +162,7 @@ def save_packets():
             json.dump(packet.to_dict(), fh, indent=2)
 
     print('Done!')
+
 
 
 if __name__ == '__main__':

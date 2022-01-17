@@ -40,6 +40,9 @@ class OracleJSONDatabaseConnection:
         except cx_Oracle.IntegrityError:
             #print('[DBG] INSERT {} ERR'.format(json_object_to_insert))
             return 0
+        except cx_Oracle.DatabaseError:
+            print('PACKET STRUCTURAL ERROR. SKIPPING...')
+            return -1
         self.pool.release(connection)
         return 1
 
