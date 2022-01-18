@@ -50,10 +50,13 @@ class OracleJSONDatabaseConnection:
 
     def delete(self, collection_name, on_column, on_value):
         connection = self.pool.acquire()
+        connection.autocommit = True
         soda = connection.getSodaDatabase()
         x_collection = soda.createCollection(collection_name)
         qbe = {on_column: on_value}
-        x_collection.find().filter(qbe).remove()
+        print('Found {} elements'.format(x_collection.find().filter(qbe).count()))
+        res = x_collection.find().filter(qbe).remove()
+        print('Removed {} documents'.format(res))
         self.pool.release(connection)
 
 
