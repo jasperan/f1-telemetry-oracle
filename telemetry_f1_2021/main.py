@@ -30,7 +30,7 @@ def _get_listener():
         print('Starting listener on localhost:20777')
         return TelemetryListener()
     except OSError as exception:
-        print(f'Unable to setup connection: {exception.args[1]}')
+        print('Unable to setup connection: {}'.format(exception.args[1]))
         print('Failed to open connector, stopping.')
         exit(127)
 
@@ -158,7 +158,7 @@ def save_packets():
             pickle.dump(packet, fh, protocol=pickle.HIGHEST_PROTOCOL)
         '''
 
-        with open(f'{root_dir}/example_packets/json/{packet_name}.json', 'w') as fh:
+        with open('{}/example_packets/json/{}.json'.format(root_dir, packet_name), 'w') as fh:
             json.dump(packet.to_dict(), fh, indent=2)
 
     print('Done!')

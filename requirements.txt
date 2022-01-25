@@ -2,3 +2,4 @@ pre-commit
 Telemetry-F1-2021
 pyautogui
 keyboard
+cx_Oracle
