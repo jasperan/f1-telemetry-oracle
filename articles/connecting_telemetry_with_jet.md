@@ -64,7 +64,7 @@ The chosen message queue provider for our architecture is [RabbitMQ](https://www
 
 This is a depiction of the architecture:
 
-![architecture](https://github.com/jasperan/f1-telemetry-oracle/img/arch.PNG?raw=true)
+![architecture](https://github.com/jasperan/f1-telemetry-oracle/blob/main/img/arch.PNG?raw=true)
 
 
 # Message queues
