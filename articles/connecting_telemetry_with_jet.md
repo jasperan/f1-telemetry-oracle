@@ -104,7 +104,10 @@ def _get_listener():
 ```
 
 With the following code, we declare a blocking connection using the Pika Python client. It's worth mentioning that RabbitMQ is able to communicate with multiple protocols. Pika is a Python client recommended by the RabbitMQ team. It uses the AMQP 0-9-1 protocol for messaging. We specify the host to be our local address for testing, since we're running the F1 2021 game in the same computer as the message queue producer / receiver. In case of having the receiver somewhere else, change the host to point to that IPv4 address.
-We also declare a queue name. In our case, as it seemed relevant for the architecture, we're using one queue per packet type, to have them distinguished. There is another important reason to make this decision: not all packet types come with the same frequency. Typically, most packet types are sent out by the F1 2021 game with a frequency of 20Hz (20 times per second), however there are some exceptions. If we just included the same queue for all packet types, we'd receive different types of data into the same queue (not ideal) and at a different pace (not cool, and would make visualizations incorrect, not in real time, which is what we're looking for).
+
+We also declare a queue name. In our case, as it seemed relevant for the architecture, we're using one queue per packet type, to have them distinguished. There is another important reason to make this decision: not all packet types come with the same frequency.
+
+Typically, most packet types are sent out by the F1 2021 game with a frequency of 20Hz (20 times per second), however there are some exceptions. If we just included the same queue for all packet types, we'd receive different types of data into the same queue (not ideal) and at a different pace (not cool, and would make visualizations incorrect, not in real time, which is what we're looking for).
 
 ```python
 def main():
@@ -174,6 +177,15 @@ So, every time a packet comes in each one of these queues, it will be inserted i
 
 ## Consumer
 
+From the consumer side, we'll read the packets and transmit them to the Oracle JET Dashboard.
+
+TODO
+
 # Credits
 
 Note that a great deal of work regarding the F1 2021 telemetry decoding has already been done by [Chris Hannam](https://github.com/chrishannam). Our repository simply has extended the functionality to integrate with RabbitMQ and Oracle databases.
+
+
+
+
+
