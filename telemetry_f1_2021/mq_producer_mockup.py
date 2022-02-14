@@ -9,6 +9,7 @@ from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, Packe
 from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
 from telemetry_f1_2021.listener import TelemetryListener
 
+import time
 
 # using time module
 import pika
@@ -77,6 +78,8 @@ def save_packet(collection_name, channel):
     channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
 
     print('{} | MQ {} OK'.format(datetime.datetime.now(), collection_name))
+
+    time.sleep(1)
 
 
 
