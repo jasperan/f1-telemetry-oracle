@@ -38,6 +38,7 @@ def main():
     pika.ConnectionParameters(host='localhost'))
     channel = connection.channel()
 
+
     list_packet_types = ['PacketMotionData', 'PacketSessionData', 'PacketLapData', 'PacketEventData', 'PacketParticipantsData',
         'PacketCarSetupData', 'PacketCarTelemetryData', 'PacketCarStatusData', 'PacketFinalClassificationData', 'PacketLobbyInfoData',
         'PacketCarDamageData', 'PacketSessionHistoryData']

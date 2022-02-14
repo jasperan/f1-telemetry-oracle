@@ -4,3 +4,6 @@ pyautogui
 keyboard
 cx_Oracle
 pika
+asyncio
+socketio
+aiohttp
