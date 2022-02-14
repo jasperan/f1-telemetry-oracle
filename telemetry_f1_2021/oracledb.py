@@ -69,6 +69,11 @@ class OracleJSONDatabaseConnection:
         self.pool.release(connection)
         return count
 
+    def get_connection(self):
+        connection = self.pool.acquire()
+        connection.autocommit = True
+        return connection
+
 
 
 def test_class():
