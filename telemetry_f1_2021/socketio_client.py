@@ -18,7 +18,7 @@ async def disconnect():
 
 async def main():
     await sio.connect('http://localhost:8080')
-    await sio.wait()
+    #await sio.wait()
 
 if __name__ == '__main__':
     asyncio.run(main())
