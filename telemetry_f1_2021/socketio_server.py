@@ -72,7 +72,7 @@ def connect(sid, environ):
         channel.queue_declare(queue='{}'.format(x))
 
     # PacketMotionData -> queue
-    sio.emit('PacketMotionData', {})
+    await sio.emit('PacketMotionData', {'a':'b'})
 
 @sio.event
 async def chat_message(sid, data):
