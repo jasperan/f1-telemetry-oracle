@@ -39,13 +39,13 @@ def connect(sid, environ):
 
 
 def callback(ch, method, properties, body):
-    print('Obtained')
     print(" [x] Received %r" % body.decode())
-    #await emit_packet(x, body.decode())
+    emit_packet(x, body.decode())
 
 
 async def emit_packet(name_to_send, obj_to_send):
-    await sio.emit(name_to_send, obj_to_send)
+    #await sio.emit(name_to_send, obj_to_send)
+    pass
 
 
 
