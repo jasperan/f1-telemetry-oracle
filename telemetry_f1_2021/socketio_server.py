@@ -19,7 +19,7 @@ async def index(request):
 
 
 @sio.event
-async def connect(sid, environ):
+def connect(sid, environ):
     print('connect ', sid)
     connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='localhost'))
