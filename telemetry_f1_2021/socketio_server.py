@@ -2,7 +2,7 @@ import asyncio
 from aiohttp import web
 import socketio
 import pika
-import eventlet
+
 
 
 sio = socketio.Server()
@@ -32,16 +32,17 @@ def connect(sid, environ):
     for x in list_packet_types:
         channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=True)
         #channel.start_consuming()
+        print('Consuming packets from the queue {}'.format(x))
     # PacketMotionData -> queue
 
 
-def callback(ch, method, properties, body):
+async def callback(ch, method, properties, body):
     print(" [x] Received %r" % body.decode())
-    emit_packet(x, body.decode())
+    #await emit_packet(x, body.decode())
 
 
-def emit_packet(name_to_send, obj_to_send):
-    sio.emit(name_to_send, obj_to_send)
+async def emit_packet(name_to_send, obj_to_send):
+    await sio.emit(name_to_send, obj_to_send)
 
 
 
@@ -59,4 +60,4 @@ def disconnect(sid):
 
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('', 8080)), app)
+    web.run_app(app)
