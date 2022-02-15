@@ -40,6 +40,7 @@ def connect(sid, environ):
 
 
 async def callback(ch, method, properties, body):
+    print('Obtained')
     print(" [x] Received %r" % body.decode())
     #await emit_packet(x, body.decode())
 
