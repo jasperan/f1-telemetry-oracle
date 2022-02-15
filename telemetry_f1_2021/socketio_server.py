@@ -2,19 +2,12 @@ import asyncio
 from aiohttp import web
 import socketio
 import pika
+import eventlet
 
 
-
-sio = socketio.AsyncServer()
+sio = socketio.Server()
 app = web.Application()
 sio.attach(app)
-
-
-
-async def index(request):
-    """Serve the client-side application."""
-    with open('index.html') as f:
-        return web.Response(text=f.read(), content_type='text/html')
 
 
 
@@ -42,13 +35,13 @@ def connect(sid, environ):
     # PacketMotionData -> queue
 
 
-async def callback(ch, method, properties, body):
+def callback(ch, method, properties, body):
     print(" [x] Received %r" % body.decode())
-    await emit_packet(x, body.decode())
+    emit_packet(x, body.decode())
 
 
-async def emit_packet(name_to_send, obj_to_send):
-    await sio.emit(name_to_send, obj_to_send)
+def emit_packet(name_to_send, obj_to_send):
+    sio.emit(name_to_send, obj_to_send)
 
 
 
@@ -64,9 +57,6 @@ def disconnect(sid):
 
 
 
-app.router.add_get('/', index)
-
-
 
 if __name__ == '__main__':
-    web.run_app(app)
+    eventlet.wsgi.server(eventlet.listen(('', 8080)), app)
