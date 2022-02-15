@@ -30,7 +30,8 @@ def connect(sid, environ):
 
     # consume all queues
     for x in list_packet_types:
-        channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=True)
+        result = channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=False)
+        print(result)
         print('Consuming packets from the queue {}'.format(x))
         channel.start_consuming()
         print('Finished consuming')
