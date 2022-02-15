@@ -5,5 +5,5 @@ keyboard
 cx_Oracle
 pika
 asyncio
-socketio
+python-socketio
 aiohttp
