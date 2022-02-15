@@ -30,8 +30,7 @@ def connect(sid, environ):
 
     # consume all queues
     for x in list_packet_types:
-        result = channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=False)
-        print(result)
+        channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=False)
         print('Consuming packets from the queue {}'.format(x))
         channel.start_consuming()
         print('Finished consuming')
@@ -39,7 +38,7 @@ def connect(sid, environ):
     # PacketMotionData -> queue
 
 
-async def callback(ch, method, properties, body):
+def callback(ch, method, properties, body):
     print('Obtained')
     print(" [x] Received %r" % body.decode())
     #await emit_packet(x, body.decode())
