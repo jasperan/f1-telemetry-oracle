@@ -57,7 +57,7 @@ async def index(request):
         return web.Response(text=f.read(), content_type='text/html')
 
 @sio.event
-def connect(sid, environ):
+async def connect(sid, environ):
     print('connect ', sid)
     connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='localhost'))
@@ -72,7 +72,7 @@ def connect(sid, environ):
         channel.queue_declare(queue='{}'.format(x))
 
     # PacketMotionData -> queue
-    emit_packets()
+    await emit_packets()
 
 
 async def emit_packets():
