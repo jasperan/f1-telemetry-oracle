@@ -34,7 +34,7 @@ def connect(sid, environ):
         #channel.start_consuming()
         #print('Finished consuming')
 
-    method_frame, header_frame, body = channel.basic_get(queue = x[0])
+    method_frame, header_frame, body = channel.basic_get(queue = list_packet_types[0])
     print(body.decode())
     # PacketMotionData -> queue
 
