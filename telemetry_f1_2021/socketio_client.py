@@ -8,9 +8,9 @@ async def connect():
     print('connection established')
 
 @sio.event
-async def my_message(data):
-    print('message received with ', data)
-    await sio.emit('my response', {'response': 'my response'})
+async def get_message():
+    print('get_message emit')
+    await sio.emit('get_message')
 
 @sio.event
 async def disconnect():
@@ -18,6 +18,7 @@ async def disconnect():
 
 async def main():
     await sio.connect('http://localhost:8080')
+    await sio.get_message()
     #await sio.wait()
 
 if __name__ == '__main__':
