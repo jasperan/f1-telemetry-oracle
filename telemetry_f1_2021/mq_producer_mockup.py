@@ -3,7 +3,7 @@ import copy
 import json
 import pickle
 from pathlib import Path
-
+import random
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
 from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
 from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
@@ -50,6 +50,7 @@ def main():
 
     try:
         while True:
+            '''
             save_packet('PacketSessionData', channel)
             save_packet('PacketMotionData', channel)
             save_packet('PacketLapData', channel)
@@ -60,7 +61,9 @@ def main():
             save_packet('PacketCarStatusData', channel)
             save_packet('PacketCarDamageData', channel)
             save_packet('PacketSessionHistoryData', channel)
-            
+            '''
+            save_packet('PacketCarTelemetryData', channel)
+
 
     except KeyboardInterrupt:
         print('Stop the car, stop the car Checo.')
@@ -75,11 +78,13 @@ def save_packet(collection_name, channel):
     dict_object = json.load(f)
     f.close()
 
+    dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
+
     channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
 
     print('{} | MQ {} OK'.format(datetime.datetime.now(), collection_name))
 
-    time.sleep(1)
+    time.sleep(.1)
 
 
 
