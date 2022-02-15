@@ -72,6 +72,10 @@ def connect(sid, environ):
         channel.queue_declare(queue='{}'.format(x))
 
     # PacketMotionData -> queue
+    emit_packets()
+
+
+async def emit_packets():
     await sio.emit('PacketMotionData', {'a':'b'})
 
 @sio.event
