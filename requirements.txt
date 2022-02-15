@@ -7,3 +7,4 @@ pika
 asyncio
 python-socketio
 aiohttp
+websockets
