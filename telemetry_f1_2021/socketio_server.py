@@ -5,7 +5,7 @@ import pika
 
 
 
-sio = socketio.Server()
+sio = socketio.AsyncServer()
 app = web.Application()
 sio.attach(app)
 
