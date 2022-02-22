@@ -25,7 +25,7 @@ import pika
 
 #ssl_context.load_cert_chain(ssl_cert, keyfile=ssl_key)
 
-_CURRENT_PACKET = dict()
+_CURRENT_PACKET = str()
 # Initialize message queue from where we're getting the data.
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
@@ -55,28 +55,13 @@ def _get_listener():
 
 # instead of having a random packet and randomizing, get from rabbitmq queue.
 def save_packet(collection_name):
-    '''
-    f = open('./example_packets/json/{}.json'.format(collection_name))
-    dict_object = json.load(f)
-    f.close()
-
-    dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
-    '''
-
-    '''
-    def callback(ch, method, properties, body):
-        print(" [x] Received %r" % body.decode())
-        swapped_body = body.decode().replace("\'", "\"")
-        _CURRENT_PACKET = json.loads(swapped_body)
-    '''
-
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
     channel.basic_qos(prefetch_count=1)
     # consume queue
-    #channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
     method, properties, body = channel.basic_get(queue='PacketCarTelemetryData', auto_ack=True)
-    swapped_body = body.decode().replace("\'", "\"")
-    _CURRENT_PACKET = json.loads(swapped_body)
+    del method, properties
+    #swapped_body = body.decode().replace("\'", "\"")
+    _CURRENT_PACKET = body.decode()
     #channel.start_consuming()
     print(_CURRENT_PACKET)
     return _CURRENT_PACKET
