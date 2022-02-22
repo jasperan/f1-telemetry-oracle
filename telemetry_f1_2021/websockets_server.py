@@ -13,6 +13,18 @@ from telemetry_f1_2021.listener import TelemetryListener
 import time
 # using time module
 import argparse
+#import ssl
+
+
+#ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+
+# Generate with Lets Encrypt, copied to this location, chown to current user and 400 permissions
+#ssl_cert = "/home/$USER/websocket/fullchain.pem"
+#ssl_key = "/home/$USER/websocket/privkey.pem"
+
+#ssl_context.load_cert_chain(ssl_cert, keyfile=ssl_key)
+
+_CURRENT_PACKET = dict()
 
 
 cli_parser = argparse.ArgumentParser(
@@ -35,15 +47,19 @@ def _get_listener():
 
 
 
-def save_packet(collection_name):
+# instead of having a random packet and randomizing, get from rabbitmq queue.
+def save_packet(collection_name, channel):
+    '''
     f = open('./example_packets/json/{}.json'.format(collection_name))
     dict_object = json.load(f)
     f.close()
 
     dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
+    '''
+    
 
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
-    return dict_object
+    return _CURRENT_PACKET
 
 
 
@@ -61,12 +77,28 @@ async def handler(websocket):
 
 
 async def main():
+    # Initialize message queue from where we're getting the data.
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+
+    # declare queue, in case the receiver is initialized before the producer.
+    channel.queue_declare(queue='PacketCarTelemetryData')
+
+    def callback(ch, method, properties, body):
+        print(" [x] Received %r" % body.decode())
+        _CURRENT_PACKET = json.loads(body.decode())
+
+
+
+    channel.basic_qos(prefetch_count=1)
+    # consume queue
+    channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
+
+    #async with websockets.serve(handler, "", 8001, ssl=ssl_context):
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future()  # run forever
 
 
+
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
