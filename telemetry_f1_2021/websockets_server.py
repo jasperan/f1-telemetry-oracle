@@ -63,17 +63,22 @@ def save_packet(collection_name):
     dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
     '''
 
-
+    '''
     def callback(ch, method, properties, body):
         print(" [x] Received %r" % body.decode())
         swapped_body = body.decode().replace("\'", "\"")
         _CURRENT_PACKET = json.loads(swapped_body)
+    '''
 
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
     channel.basic_qos(prefetch_count=1)
     # consume queue
-    channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
-    channel.start_consuming()
+    #channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
+    method, properties, body = channel.basic_get(queue='PacketCarTelemetryData', auto_ack=True)
+    print(" [x] Received %r" % body.decode())
+    swapped_body = body.decode().replace("\'", "\"")
+    _CURRENT_PACKET = json.loads(swapped_body)
+    #channel.start_consuming()
     print(_CURRENT_PACKET)
     return _CURRENT_PACKET
 
