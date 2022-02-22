@@ -72,6 +72,7 @@ def save_packet(collection_name):
     channel.basic_qos(prefetch_count=1)
     # consume queue
     channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
+    channel.start_consuming()
     print(_CURRENT_PACKET)
     return _CURRENT_PACKET
 
