@@ -29,6 +29,8 @@ _CURRENT_PACKET = dict()
 # Initialize message queue from where we're getting the data.
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
+# declare queue, in case the receiver is initialized before the producer.
+channel.queue_declare(queue='PacketCarTelemetryData')
 
 
 cli_parser = argparse.ArgumentParser(
@@ -60,9 +62,16 @@ def save_packet(collection_name):
 
     dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
     '''
-    
+
+
+    def callback(ch, method, properties, body):
+        print(" [x] Received %r" % body.decode())
+        _CURRENT_PACKET = json.loads(body.decode())
 
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
+    channel.basic_qos(prefetch_count=1)
+    # consume queue
+    channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
     print(_CURRENT_PACKET)
     return _CURRENT_PACKET
 
@@ -83,18 +92,7 @@ async def handler(websocket):
 
 async def main():
 
-    # declare queue, in case the receiver is initialized before the producer.
-    channel.queue_declare(queue='PacketCarTelemetryData')
 
-    def callback(ch, method, properties, body):
-        print(" [x] Received %r" % body.decode())
-        _CURRENT_PACKET = json.loads(body.decode())
-
-
-
-    channel.basic_qos(prefetch_count=1)
-    # consume queue
-    channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
 
     #async with websockets.serve(handler, "", 8001, ssl=ssl_context):
     async with websockets.serve(handler, "", 8001):
