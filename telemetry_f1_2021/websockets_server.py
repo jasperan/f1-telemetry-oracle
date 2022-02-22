@@ -66,7 +66,8 @@ def save_packet(collection_name):
 
     def callback(ch, method, properties, body):
         print(" [x] Received %r" % body.decode())
-        _CURRENT_PACKET = json.loads(body.decode())
+        swapped_body = body.decode().replace("\'", "\"")
+        _CURRENT_PACKET = json.loads(swapped_body)
 
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
     channel.basic_qos(prefetch_count=1)
