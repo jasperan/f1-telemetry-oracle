@@ -75,7 +75,6 @@ def save_packet(collection_name):
     # consume queue
     #channel.basic_consume(queue='PacketCarTelemetryData', on_message_callback=callback, auto_ack=True)
     method, properties, body = channel.basic_get(queue='PacketCarTelemetryData', auto_ack=True)
-    print(" [x] Received %r" % body.decode())
     swapped_body = body.decode().replace("\'", "\"")
     _CURRENT_PACKET = json.loads(swapped_body)
     #channel.start_consuming()
@@ -92,7 +91,7 @@ async def handler(websocket):
         if message == 'getPacketCarTelemetryData':
             result = save_packet('PacketCarTelemetryData')
 
-        await websocket.send(json.dumps(result))
+        await websocket.send(result)
 
 
 
