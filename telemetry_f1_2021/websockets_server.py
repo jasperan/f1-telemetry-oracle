@@ -52,7 +52,7 @@ def _get_listener():
 
 
 # instead of having a random packet and randomizing, get from rabbitmq queue.
-def save_packet(collection_name, channel):
+def save_packet(collection_name):
     '''
     f = open('./example_packets/json/{}.json'.format(collection_name))
     dict_object = json.load(f)
