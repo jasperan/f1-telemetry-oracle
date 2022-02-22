@@ -63,6 +63,7 @@ def save_packet(collection_name):
     
 
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
+    print(_CURRENT_PACKET)
     return _CURRENT_PACKET
 
 
