@@ -26,6 +26,9 @@ import pika
 #ssl_context.load_cert_chain(ssl_cert, keyfile=ssl_key)
 
 _CURRENT_PACKET = dict()
+# Initialize message queue from where we're getting the data.
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
 
 
 cli_parser = argparse.ArgumentParser(
@@ -78,9 +81,6 @@ async def handler(websocket):
 
 
 async def main():
-    # Initialize message queue from where we're getting the data.
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-    channel = connection.channel()
 
     # declare queue, in case the receiver is initialized before the producer.
     channel.queue_declare(queue='PacketCarTelemetryData')
