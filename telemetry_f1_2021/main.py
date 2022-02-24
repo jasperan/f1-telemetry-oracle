@@ -120,7 +120,7 @@ def save_packet_weather(dbhandler, packet, timestamp):
 
 
 def save_packet(collection_name, dbhandler, packet):
-    dict_object = packet.to_dict()
+    dict_object = packet.to_json()
     # Load into Oracle DB
     save_oracle_db(collection_name, dbhandler, dict_object)
 

@@ -87,7 +87,7 @@ def main():
 
 
 def save_packet(collection_name, packet, channel):
-    dict_object = packet.to_dict()
+    dict_object = packet.to_json()
 
     channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
 

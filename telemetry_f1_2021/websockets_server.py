@@ -32,7 +32,6 @@ channel = connection.channel()
 # declare queue, in case the receiver is initialized before the producer.
 channel.queue_declare(queue='PacketCarTelemetryData')
 
-
 cli_parser = argparse.ArgumentParser(
     description="Script that records telemetry F1 2021 weather data into a RabbitMQ queue"
 )
@@ -52,6 +51,7 @@ def _get_listener():
         exit(127)
 
 
+
 # instead of having a random packet and randomizing, get from rabbitmq queue.
 def save_packet(collection_name):
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
@@ -68,7 +68,7 @@ def save_packet(collection_name):
         _CURRENT_PACKET = {}
     #channel.start_consuming()
     print(_CURRENT_PACKET)
-    return json.dumps(_CURRENT_PACKET).replace("'", '"')
+    return _CURRENT_PACKET
 
 
 
