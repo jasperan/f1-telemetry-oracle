@@ -60,6 +60,7 @@ def save_packet(collection_name):
     method, properties, body = channel.basic_get(queue='PacketCarTelemetryData', auto_ack=True)
     del method, properties
     #swapped_body = body.decode().replace("\'", "\"")
+    print(_CURRENT_PACKET)
     try:
         _CURRENT_PACKET = body.decode()
     except AttributeError:
