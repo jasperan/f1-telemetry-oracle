@@ -89,7 +89,7 @@ def main():
 def save_packet(collection_name, packet, channel):
     dict_object = packet.to_dict()
 
-    channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(json.dumps(dict_object)))
+    channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
 
     print('{} | MQ {} OK'.format(datetime.datetime.now(), collection_name))
 

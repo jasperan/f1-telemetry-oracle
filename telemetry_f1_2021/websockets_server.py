@@ -68,7 +68,7 @@ def save_packet(collection_name):
         _CURRENT_PACKET = {}
     #channel.start_consuming()
     print(_CURRENT_PACKET)
-    return json.dumps(_CURRENT_PACKET)
+    return json.dumps(_CURRENT_PACKET).replace("'", '"')
 
 
 
