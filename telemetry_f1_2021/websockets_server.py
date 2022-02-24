@@ -52,7 +52,6 @@ def _get_listener():
         exit(127)
 
 
-
 # instead of having a random packet and randomizing, get from rabbitmq queue.
 def save_packet(collection_name):
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
