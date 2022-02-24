@@ -64,7 +64,7 @@ def save_packet(collection_name):
     try:
         _CURRENT_PACKET = body.decode()
     except AttributeError:
-        _CURRENT_PACKET = '{}'
+        _CURRENT_PACKET = {}
     #channel.start_consuming()
     print(_CURRENT_PACKET)
     return json.dumps(_CURRENT_PACKET).replace("\'", "\"")
