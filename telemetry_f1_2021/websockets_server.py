@@ -25,7 +25,7 @@ import pika
 
 #ssl_context.load_cert_chain(ssl_cert, keyfile=ssl_key)
 
-_CURRENT_PACKET = str()
+global _CURRENT_PACKET
 # Initialize message queue from where we're getting the data.
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 channel = connection.channel()
