@@ -7,14 +7,10 @@ from pathlib import Path
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
 from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
 from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
-
 from telemetry_f1_2021.listener import TelemetryListener
-
 from oracledb import OracleJSONDatabaseConnection
-
 # using time module
 import time
-
 import argparse
 
 cli_parser = argparse.ArgumentParser(
@@ -25,6 +21,8 @@ cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier 
 args = cli_parser.parse_args()
 
 
+global listener
+
 def _get_listener():
     try:
         print('Starting listener on localhost:20777')
@@ -34,16 +32,30 @@ def _get_listener():
         print('Failed to open connector, stopping.')
         exit(127)
 
+listener = _get_listener()
 
 # get weather data and insert it into database.
 def main():
     # Get connection to db.
     dbhandler = OracleJSONDatabaseConnection()
 
-    listener = _get_listener()
-    #print(type(PacketSessionData))
-    #print(PacketSessionData._fields_)
+    try:
+        read_data_inf(dbhandler)
+    except KeyboardInterrupt:
+        print('Stop the car, stop the car Checo.')
+        print('Stop the car, stop at pit exit.')
+        print('Just pull over to the side.')
+        dbhandler.close_pool()
+    except Exception:
+        listener = _get_listener()
+        read_data_inf(dbhandler)
 
+
+    dbhandler.close_pool()
+
+
+
+def read_data_inf(dbhandler):
     try:
         while True:
             packet = listener.get()
@@ -75,16 +87,8 @@ def main():
                 save_packet('PacketCarDamageData', dbhandler, packet)
             elif isinstance(packet, PacketSessionHistoryData):
                 save_packet('PacketSessionHistoryData', dbhandler, packet)
-            
-
-    except KeyboardInterrupt:
-        print('Stop the car, stop the car Checo.')
-        print('Stop the car, stop at pit exit.')
-        print('Just pull over to the side.')
-        dbhandler.close_pool()
-
-    dbhandler.close_pool()
-
+    except Exception:
+        read_data_inf(dbhandler)
 
 
 

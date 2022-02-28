@@ -64,7 +64,7 @@ def save_packet(collection_name):
         _CURRENT_PACKET = body.decode()
         print(_CURRENT_PACKET)
     except AttributeError as e:
-        print('AttributeError: {}'.format(e))
+        #print('AttributeError: {}'.format(e))
         _CURRENT_PACKET = {}
     #channel.start_consuming()
     print(_CURRENT_PACKET)
