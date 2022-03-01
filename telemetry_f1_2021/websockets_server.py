@@ -13,17 +13,9 @@ from telemetry_f1_2021.listener import TelemetryListener
 import time
 # using time module
 import argparse
-#import ssl
 import pika
 
 
-#ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-
-# Generate with Lets Encrypt, copied to this location, chown to current user and 400 permissions
-#ssl_cert = "/home/$USER/websocket/fullchain.pem"
-#ssl_key = "/home/$USER/websocket/privkey.pem"
-
-#ssl_context.load_cert_chain(ssl_cert, keyfile=ssl_key)
 
 global _CURRENT_PACKET
 # Initialize message queue from where we're getting the data.
@@ -57,7 +49,7 @@ def save_packet(collection_name):
     print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
     channel.basic_qos(prefetch_count=1)
     # consume queue
-    method, properties, body = channel.basic_get(queue='PacketCarTelemetryData', auto_ack=True)
+    method, properties, body = channel.basic_get(queue=collection_name, auto_ack=True)
     del method, properties
     #swapped_body = body.decode().replace("\'", "\"")
     try:
@@ -79,6 +71,8 @@ async def handler(websocket):
 
         if message == 'getPacketCarTelemetryData':
             result = save_packet('PacketCarTelemetryData')
+        elif message == 'getPacketSessionData':
+            result = save_packet('PacketSessionData')
 
         await websocket.send(result)
 
