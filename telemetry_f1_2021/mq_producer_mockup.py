@@ -63,6 +63,8 @@ def main():
             save_packet('PacketSessionHistoryData', channel)
             '''
             save_packet('PacketCarTelemetryData', channel)
+            save_packet('PacketSessionData', channel)
+
 
 
     except KeyboardInterrupt:
@@ -78,7 +80,8 @@ def save_packet(collection_name, channel):
     dict_object = json.load(f)
     f.close()
 
-    dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
+    if collection_name == 'PacketCarTelemetryData':
+        dict_object['m_car_telemetry_data'][0]['m_speed'] = random.randint(0, 100)
 
     channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
 
