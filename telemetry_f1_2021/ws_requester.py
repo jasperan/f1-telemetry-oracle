@@ -10,4 +10,8 @@ async def hello(uri):
             message = await websocket.recv()
             print(message)
 
+            await websocket.send("getPacketSessionData")
+            message = await websocket.recv()
+            print(message)
+
 asyncio.run(hello("ws://130.61.139.189:8001"))

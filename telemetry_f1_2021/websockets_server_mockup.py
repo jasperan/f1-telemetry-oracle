@@ -19,7 +19,7 @@ import pika
 
 global _CURRENT_PACKET
 # Initialize message queue from where we're getting the data.
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
 channel = connection.channel()
 # declare queue, in case the receiver is initialized before the producer.
 channel.queue_declare(queue='PacketCarTelemetryData')
