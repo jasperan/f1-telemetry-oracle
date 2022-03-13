@@ -4,11 +4,9 @@ In this article, we're going to talk about how to use telemetry data from the F1
 
 # Introduction
 
-Oracle JET (JavaScript Extension Toolkit) is a technology developed by Oracle that acts as an extension of commands for developing both mobile applications and browser-based user interfaces with ease.
+Oracle JET (JavaScript Extension Toolkit) is a technology developed by Oracle that acts as an extension of commands for developing both mobile applications and browser-based user interfaces with ease. It's targeted for JavaScript developers working on client-side applications. By packaging several open-source JavaScript libraries together with Oracle JavaScript libraries, it makes building applications very simple and efficient; and we also have the advantage of an easier interaction with other Oracle productrs and services (especially Oracle Cloud Infrastructure services).
 
-TODO
-
-On the other hand, we're able to extract telemetry data using the in-game's telemetry features. This includes packets of the following types:
+From the videogame, we're able to extract telemetry data using the in-game's telemetry features. This includes packets of the following types:
 - Motion data
 - Session data
 - Lap data
@@ -60,7 +58,7 @@ Message queues have been around for decades and are a way to asynchronously comm
 
 Therefore, messages are stored in a queue until they are processed / consumed by a consumer. Once they are consumed, they are eliminated from the queue. Every message is processed only once, and by only one consumer. In case of having several consumers, each consumer will process different messages.
 
-The chosen message queue provider for our architecture is [RabbitMQ](https://www.rabbitmq.com/), a widely known, completely open-source message broker able to integrate all the above mentioned functionalities. We created a producer ([mq_producer.py](../telemetry_f1_2021/mq_producer.py)) and a consumer of the data / receiver ([mq_receiver.py](../telemetry_f1_2021/mq_receiver.py)). The purpose of the producer is to obtain messages from the F1 2021 game, and add them to our message queue. Complementarily, the receiver will consume the messages from the queue, and "inject" these messages into our Oracle JET-powered dashboard in order to have real-time visualizations of what's actually going on inside the game.
+The chosen message queue provider for our architecture is [RabbitMQ](https://www.rabbitmq.com/), a widely known, completely open-source message broker able to integrate all the above mentioned functionalities. We created a producer ([mq_producer.py](../telemetry_f1_2021/mq_producer.py)) and a consumer of the data / receiver ([mq_receiver.py](../telemetry_f1_2021/mq_receiver.py)). The purpose of the producer is to obtain messages from the F1 2021 game, and add them to our message queue. Complementarily, the receiver will consume the messages from the queue through **web sockets**, and "inject" these messages into our Oracle JET-powered dashboard in order to have real-time visualizations of what's actually going on inside the game.
 
 This is a depiction of the architecture:
 
@@ -181,11 +179,37 @@ From the consumer side, we'll read the packets and transmit them to the Oracle J
 
 TODO
 
+# Web Sockets
+
+Web sockets are especially important in our case, as they are the way we chose for communicating the front-end (Oracle JET-powered website) and our message queues. Web sockets are a type of implementation of standard sockets (which sit on the transport layer), however they communicate through the application layer. Standard sockets, as we know them in telecommunications engineering, are located on top of the transport layer, which makes them extremely efficient. On the other hand, web sockets sit on top of the application layer, which means that they encapsulate sockets in the transport layer over HTTP, and this encapsulation also allows to have an easier programming interface: the programming syntax and know-how is much easier than it would be for us to program them using standard sockets. Most things about connectivity, heartbeats, exceptions... are taken out of the equation and they are presented to us in an easy API.
+
+So, the idea of the web sockets is to communicate the web front-end with the message queue back-end. When messages are requested by the front-end, they are consumed / popped from the queue and an acknowledgement is sent to the back-end, to verify the message was properly received.
+
+It's also important to note that, whilst we benefit from an easier API when using web sockets, we lose a bit of performance. However, in our case, with the amount of KB/s being sent in our architecture, the difference is negligible, and it doesn't at all affect the performance of our real-time dashboard in the front-end.
+
+So, to summarize: in our use case, the client will be the front-end implemented in JET, and the server will be our telemetry listener, inserting data into the RabbitMQ message queue. The front end makes requests using web sockets, and changes display values based upon what we receive.
+
+
 # Credits
 
 Note that a great deal of work regarding the F1 2021 telemetry decoding has already been done by [Chris Hannam](https://github.com/chrishannam). Our repository simply has extended the functionality to integrate with RabbitMQ and Oracle databases.
 
+Also, a warm thank you to [Wojciech Pluta](https://www.linkedin.com/in/wojciechpluta/) and [John Brock](https://www.linkedin.com/in/johnabrock/) for contributing in the development of the Proof of Concept (POC) dashboard for the [AlmaLinux + Oracle Pi Day 2022](https://314piday.com/), where we presented this POC to showcase the capabilities of Oracle JET together with Raspberry Pi.
 
+## How can I get started on OCI?
 
+Remember that you can always sign up for free with OCI! Your Oracle Cloud account provides a number of Always Free services and a Free Trial with US$300 of free credit to use on all eligible OCI services for up to 30 days. These Always Free services are available for an **unlimited** period of time. The Free Trial services may be used until your US$300 of free credits are consumed or the 30 days has expired, whichever comes first. You can [sign up here for free](https://signup.cloud.oracle.com/?source=:ex:tb:::::WWMK211125P00027&SC=:ex:tb:::::WWMK211125P00027&pcode=WWMK211125P00027).
 
+## Join the conversation!
 
+If you’re curious about the goings-on of Oracle Developers in their natural habitat, come join us on our public Slack channel! We don’t mind being your fish bowl 🐠
+
+## License
+
+Written by [Ignacio Guillermo Martínez](https://www.linkedin.com/in/ignacio-g-martinez/) [@jasperan](https://github.com/jasperan), edited by [GreatGhostsss](https://github.com/GreatGhostsss)
+
+Copyright (c) 2021 Oracle and/or its affiliates.
+
+Licensed under the Universal Permissive License (UPL), Version 1.0.
+
+See [LICENSE](../LICENSE) for more details.
