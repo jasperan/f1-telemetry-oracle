@@ -35,7 +35,7 @@ def _get_listener():
 def main():
 
     connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host='localhost'))
+    pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
     channel = connection.channel()
 
 

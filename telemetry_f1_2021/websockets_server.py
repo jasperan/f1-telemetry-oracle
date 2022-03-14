@@ -21,26 +21,15 @@ global _CURRENT_PACKET
 # Initialize message queue from where we're getting the data.
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
 channel = connection.channel()
-# declare queue, in case the receiver is initialized before the producer.
+# declare our queues
 channel.queue_declare(queue='PacketCarTelemetryData')
+channel.queue_declare(queue='PacketSessionData')
 
-cli_parser = argparse.ArgumentParser(
-    description="Script that records telemetry F1 2021 weather data into a RabbitMQ queue"
-)
 
+
+cli_parser = argparse.ArgumentParser()
 cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
 args = cli_parser.parse_args()
-
-
-
-def _get_listener():
-    try:
-        print('Starting listener on localhost:20777')
-        return TelemetryListener()
-    except OSError as exception:
-        print('Unable to setup connection: {}'.format(exception.args[1]))
-        print('Failed to open connector, stopping.')
-        exit(127)
 
 
 
@@ -51,14 +40,11 @@ def save_packet(collection_name):
     # consume queue
     method, properties, body = channel.basic_get(queue=collection_name, auto_ack=True)
     del method, properties
-    #swapped_body = body.decode().replace("\'", "\"")
     try:
         _CURRENT_PACKET = body.decode()
         print(_CURRENT_PACKET)
     except AttributeError as e:
-        #print('AttributeError: {}'.format(e))
         _CURRENT_PACKET = {}
-    #channel.start_consuming()
     print(_CURRENT_PACKET)
     return json.dumps(_CURRENT_PACKET)
 
@@ -80,9 +66,6 @@ async def handler(websocket):
 
 
 async def main():
-
-
-
     #async with websockets.serve(handler, "", 8001, ssl=ssl_context):
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future()  # run forever

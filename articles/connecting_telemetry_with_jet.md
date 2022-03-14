@@ -67,7 +67,7 @@ This is a depiction of the architecture:
 
 # Message queues
 
-In this section, we're going to explain the code we've used to implement this message broker architecture.
+In this section, we're going to explain the code we've used to implement the message broker architecture.
 
 ## Producer
 
@@ -175,9 +175,35 @@ So, every time a packet comes in each one of these queues, it will be inserted i
 
 ## Consumer
 
-From the consumer side, we'll read the packets and transmit them to the Oracle JET Dashboard.
+From the consumer side, we read messages from the queue and transmit them to the Oracle JET Dashboard.
 
-TODO
+From the point of view of our Python code, we can create a script like this, which will be useful during development to check for connectivity issues in the message queues. We can run it to see if messages are being popped from the queue / all network configurations are correct:
+
+```python
+def main():
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
+    channel = connection.channel()
+
+    list_packet_types = ['PacketMotionData', 'PacketSessionData', 'PacketLapData', 'PacketEventData', 'PacketParticipantsData',
+        'PacketCarSetupData', 'PacketCarTelemetryData', 'PacketCarStatusData', 'PacketFinalClassificationData', 'PacketLobbyInfoData',
+        'PacketCarDamageData', 'PacketSessionHistoryData']
+
+    # declare all queues, in case the receiver is initialized before the producer.
+    for x in list_packet_types:
+        channel.queue_declare(queue='{}'.format(x))
+
+    # this is the function that will be executed every time
+    def callback(ch, method, properties, body):
+        print(" [x] Received %r" % body.decode())
+
+    # consume all queues
+    for x in list_packet_types:
+        channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=True)
+    
+
+    print(' [*] Waiting for messages. To exit press CTRL+C')
+    channel.start_consuming()
+```
 
 # Web Sockets
 
@@ -189,12 +215,93 @@ It's also important to note that, whilst we benefit from an easier API when usin
 
 So, to summarize: in our use case, the client will be the front-end implemented in JET, and the server will be our telemetry listener, inserting data into the RabbitMQ message queue. The front end makes requests using web sockets, and changes display values based upon what we receive.
 
+## WS Server (Back-end)
+
+In the back-end, we'll consume from our message queue and send the requested information to the client:
+
+```python
+# this variable stores the most recent packet received from the queue
+global _CURRENT_PACKET
+# Initialize message queue from where we're getting the data.
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
+channel = connection.channel()
+# declare our queues
+channel.queue_declare(queue='PacketCarTelemetryData')
+channel.queue_declare(queue='PacketSessionData')
+
+cli_parser = argparse.ArgumentParser()
+cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
+args = cli_parser.parse_args()
+
+
+# instead of having a random packet and randomizing, get from rabbitmq queue.
+def save_packet(collection_name):
+    print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
+    channel.basic_qos(prefetch_count=1)
+    # consume queue
+    method, properties, body = channel.basic_get(queue=collection_name, auto_ack=True) # we get 1 packet exactly
+    del method, properties # we don't need these two values
+    try:
+        _CURRENT_PACKET = body.decode()
+        print(_CURRENT_PACKET)
+    except AttributeError as e: # in case there are no packets in the queue, we just create an empty packet for the front-end to interpret.
+        _CURRENT_PACKET = {}
+    print(_CURRENT_PACKET)
+    return json.dumps(_CURRENT_PACKET)
+
+
+# this code is run every time a WS request comes in.
+async def handler(websocket):
+    while True:
+        message = await websocket.recv()
+
+        if message == 'getPacketCarTelemetryData':
+            result = save_packet('PacketCarTelemetryData')
+        elif message == 'getPacketSessionData':
+            result = save_packet('PacketSessionData')
+
+        await websocket.send(result)
+
+
+
+async def main(): # we declare this python script as a web socket server
+    async with websockets.serve(handler, "", 8001):
+        await asyncio.Future()  # run forever
+```
+
+## WS Client (Front-end)
+
+In the front-end, we'll make periodic requests to the web socket server, and update the value to display using JavaScript. The original JavaScript code for this functionality can be found [in this file.](https://github.com/peppertech/FormulaPi/blob/main/src/components/content/index.tsx)
+
+During development, a similar code to check for received web socket request/responses was developed. This code is very basic:
+
+```python
+# Client simulator for web socket connection to a server located in the below mentioned IP address and port.
+# This "client" will make constant requests (of 2 types, interchangeably), to test during development.
+
+async def hello(uri):
+    async with connect(uri) as websocket:
+        while True:
+            await websocket.send("getPacketCarTelemetryData")
+            message = await websocket.recv()
+            print(message)
+
+            await websocket.send("getPacketSessionData")
+            message = await websocket.recv()
+            print(message)
+
+asyncio.run(hello("ws://WS_SERVER_IP_ADDRESS:WS_PORT"))
+```
+
+Note that the chosen commands __getPacketCarTelemetryData__ and __getPacketSessionData__ have to be accepted commands in the web socket server. In our case, they're consistent with each other, and that's the reason why we get responses.
 
 # Credits
 
 Note that a great deal of work regarding the F1 2021 telemetry decoding has already been done by [Chris Hannam](https://github.com/chrishannam). Our repository simply has extended the functionality to integrate with RabbitMQ and Oracle databases.
 
 Also, a warm thank you to [Wojciech Pluta](https://www.linkedin.com/in/wojciechpluta/) and [John Brock](https://www.linkedin.com/in/johnabrock/) for contributing in the development of the Proof of Concept (POC) dashboard for the [AlmaLinux + Oracle Pi Day 2022](https://314piday.com/), where we presented this POC to showcase the capabilities of Oracle JET together with Raspberry Pi.
+
+Finally, remember to check out the front-end code in [this repository.](https://github.com/peppertech/FormulaPi)
 
 ## How can I get started on OCI?
 

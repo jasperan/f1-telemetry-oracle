@@ -2,7 +2,7 @@
 import pika, sys, os
 
 def main():
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
     channel = connection.channel()
 
     list_packet_types = ['PacketMotionData', 'PacketSessionData', 'PacketLapData', 'PacketEventData', 'PacketParticipantsData',

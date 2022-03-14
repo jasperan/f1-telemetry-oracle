@@ -1,7 +1,8 @@
 import asyncio
 from websockets import connect
 
-# Client simulator for web socket connection to a server located in the below mentioned IP address and port. 
+# Client simulator for web socket connection to a server located in the below mentioned IP address and port.
+# This "client" will make constant requests (of 2 types, interchangeably), to test during development.
 
 async def hello(uri):
     async with connect(uri) as websocket:
