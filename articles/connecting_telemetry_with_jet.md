@@ -1,12 +1,12 @@
 # Connecting F1 2021 Telemetry with Oracle JET
 
-In this article, we're going to talk about how to use telemetry data from the F1 2021 videogame developed by Codemasters, and display this data in real time using Oracle JET.
+In this article, we're going to talk about how to use telemetry data from F1 2021, a videogame developed by Codemasters and display this data in real time using Oracle JET.
 
 # Introduction
 
 Oracle JET (JavaScript Extension Toolkit) is a technology developed by Oracle that acts as an extension of commands for developing both mobile applications and browser-based user interfaces with ease. It's targeted for JavaScript developers working on client-side applications. By packaging several open-source JavaScript libraries together with Oracle JavaScript libraries, it makes building applications very simple and efficient; and we also have the advantage of an easier interaction with other Oracle productrs and services (especially Oracle Cloud Infrastructure services).
 
-From the videogame, we're able to extract telemetry data using the in-game's telemetry features. This includes packets of the following types:
+From the videogame, we're able to extract telemetry data using in-game's telemetry features. This includes packets of the following types:
 - Motion data
 - Session data
 - Lap data
@@ -48,17 +48,17 @@ class CarTelemetryData(Packet):
     ]
 ```
 
-All packet types and definitions are accessible in [this file](https://github.com/jasperan/f1-telemetry-oracle/blob/main/telemetry_f1_2021/cleaned_packets.py), together with all variable definitions.
+All packet types and definitions are accessible in [this file](https://github.com/jasperan/f1-telemetry-oracle/blob/main/telemetry_f1_2021/cleaned_packets.py) together with all variable definitions.
 
 # Architecture
 
 In telemetry, packets typically come in an orderly fashion. However, there are instances where these packets arrive later due to network conditions out of our control. To prevent accidental packet reordering, and to preserve data integrity, we've chosen to implement the communication architecture with message queues.
 
-Message queues have been around for decades and are a way to asynchronously communicate a consumer and a producer. It's been a precursor of inter-process communication inside Operating Systems like UNIX-based OS's, and it's expanded the functionality to many other areas. We believe that message queues fit perfectly into our narrative.
+Message queues have been around for decades and are a way to asynchronously communicate between a consumer and a producer. It's been a precursor of inter-process communication inside Operating Systems like UNIX-based OSes, and it's expanded the functionality to many other areas. For these reasons, message queues fit perfectly into our narrative.
 
-Therefore, messages are stored in a queue until they are processed / consumed by a consumer. Once they are consumed, they are eliminated from the queue. Every message is processed only once, and by only one consumer. In case of having several consumers, each consumer will process different messages.
+Messages are stored in a queue until they are processed / consumed by a consumer. Once they are consumed, they are eliminated from the queue. Every message is processed only once, and by only one consumer. In case of having several consumers, each consumer will process different messages.
 
-The chosen message queue provider for our architecture is [RabbitMQ](https://www.rabbitmq.com/), a widely known, completely open-source message broker able to integrate all the above mentioned functionalities. We created a producer ([mq_producer.py](../telemetry_f1_2021/mq_producer.py)) and a consumer of the data / receiver ([mq_receiver.py](../telemetry_f1_2021/mq_receiver.py)). The purpose of the producer is to obtain messages from the F1 2021 game, and add them to our message queue. Complementarily, the receiver will consume the messages from the queue through **web sockets**, and "inject" these messages into our Oracle JET-powered dashboard in order to have real-time visualizations of what's actually going on inside the game.
+The message queue provider for our architecture is [RabbitMQ](https://www.rabbitmq.com/), a widely known, completely open-source message broker able to integrate all the above mentioned functionalities. I've created a producer ([mq_producer.py](../telemetry_f1_2021/mq_producer.py)) and a consumer of the data / receiver ([mq_receiver.py](../telemetry_f1_2021/mq_receiver.py)). The purpose of the producer is to obtain messages from the F1 2021 game, and add them to our message queue. Complementarily, the receiver will consume the messages from the queue through **web sockets**, and "inject" these messages into our Oracle JET-powered dashboard in order to have real-time visualizations of what's actually going on inside the game.
 
 This is a depiction of the architecture:
 
@@ -71,11 +71,9 @@ In this section, we're going to explain the code we've used to implement the mes
 
 ## Producer
 
-We use [the telemetry_f1_2021 listener Python library](https://github.com/jasperan/f1-telemetry-oracle) for encoding / decoding of the in-game packets, which facilitates us reading these packets in human-readable format.
+We're using [the telemetry_f1_2021 listener Python library](https://github.com/jasperan/f1-telemetry-oracle) for encoding / decoding of the in-game packets, which facilitates us reading these packets in human-readable format.
 
-We bind port 20777 to listen for UDP packets coming from the F1 2021 game. This port can be changed, however the default port in the in-game's settings is configured to 20777. If you're planning to change this, make sure to change the in-game telemetry settings as well.
-
-
+We bind port 20777 to listen for UDP packets coming from the F1 2021 game. This port can be changed; however, the default port in the in-game's settings is configured to 20777. If you're planning to change this, make sure to change the in-game telemetry settings as well.
 
 ```python
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
@@ -171,13 +169,13 @@ def save_packet(collection_name, packet, channel):
     print('{} | MQ {} OK'.format(datetime.datetime.now(), collection_name)) # simple debug
 ```
 
-So, every time a packet comes in each one of these queues, it will be inserted into the queue.
+So every time a packet comes in each one of these queues, it will be inserted into the queue.
 
 ## Consumer
 
 From the consumer side, we read messages from the queue and transmit them to the Oracle JET Dashboard.
 
-From the point of view of our Python code, we can create a script like this, which will be useful during development to check for connectivity issues in the message queues. We can run it to see if messages are being popped from the queue / all network configurations are correct:
+From the point of view of our Python code, we can create a script like this, which will be useful during development to check for connectivity issues in the message queues. We can run it to see if messages are being popped from the queue and that all network configurations are correct:
 
 ```python
 def main():
@@ -207,13 +205,15 @@ def main():
 
 # Web Sockets
 
-Web sockets are especially important in our case, as they are the way we chose for communicating the front-end (Oracle JET-powered website) and our message queues. Web sockets are a type of implementation of standard sockets (which sit on the transport layer), however they communicate through the application layer. Standard sockets, as we know them in telecommunications engineering, are located on top of the transport layer, which makes them extremely efficient. On the other hand, web sockets sit on top of the application layer, which means that they encapsulate sockets in the transport layer over HTTP, and this encapsulation also allows to have an easier programming interface: the programming syntax and know-how is much easier than it would be for us to program them using standard sockets. Most things about connectivity, heartbeats, exceptions... are taken out of the equation and they are presented to us in an easy API.
+Web sockets are especially important in our case, as they are the way we chose to communicate the front-end (Oracle JET-powered website) and message queues. 
 
-So, the idea of the web sockets is to communicate the web front-end with the message queue back-end. When messages are requested by the front-end, they are consumed / popped from the queue and an acknowledgement is sent to the back-end, to verify the message was properly received.
+Web sockets are a type of implementation of standard sockets (which sit on the transport layer). However, they communicate through the application layer. Standard sockets, as we know from telecommunications engineering, are located on top of the transport layer, which makes them extremely efficient. On the other hand, web sockets sit on top of the application layer which means that they encapsulate sockets in the transport layer over HTTP and this encapsulation also allows to have an easier programming interface: the programming syntax and know-how is much easier than it would be for us to program them using standard sockets. Most things about connectivity, heartbeats, exceptions, among others are taken out of the equation and presented to us in an easy API.
 
-It's also important to note that, whilst we benefit from an easier API when using web sockets, we lose a bit of performance. However, in our case, with the amount of KB/s being sent in our architecture, the difference is negligible, and it doesn't at all affect the performance of our real-time dashboard in the front-end.
+So, the purpose of the web sockets is to communicate the web front-end to the message queue back-end. When messages are requested by the front-end, they are consumed/popped from the queue and an acknowledgement is sent to the back-end to verify the message was properly received.
 
-So, to summarize: in our use case, the client will be the front-end implemented in JET, and the server will be our telemetry listener, inserting data into the RabbitMQ message queue. The front end makes requests using web sockets, and changes display values based upon what we receive.
+It's also important to note that, whilst we benefit from an easier API when using web sockets, we lose a bit of performance. However, in our case, with the amount of KB/s being sent in our architecture, the difference is negligible and it doesn't at all affect the performance of our real-time dashboard in the front-end.
+
+So, to summarize: in our use case, the client will be the front-end implemented in JET, and the server will be our telemetry listener inserting data into the RabbitMQ message queue. The front end makes requests using web sockets and changes display values based upon what we receive.
 
 ## WS Server (Back-end)
 
@@ -271,7 +271,7 @@ async def main(): # we declare this python script as a web socket server
 
 ## WS Client (Front-end)
 
-In the front-end, we'll make periodic requests to the web socket server, and update the value to display using JavaScript. The original JavaScript code for this functionality can be found [in this file.](https://github.com/peppertech/FormulaPi/blob/main/src/components/content/index.tsx)
+In the front-end, we'll make periodic requests to the web socket server, and update the value to display using JavaScript. The original JavaScript code for this functionality can be found [in this file](https://github.com/peppertech/FormulaPi/blob/main/src/components/content/index.tsx).
 
 During development, a similar code to check for received web socket request/responses was developed. This code is very basic:
 
@@ -301,15 +301,15 @@ Note that a great deal of work regarding the F1 2021 telemetry decoding has alre
 
 Also, a warm thank you to [Wojciech Pluta](https://www.linkedin.com/in/wojciechpluta/) and [John Brock](https://www.linkedin.com/in/johnabrock/) for contributing in the development of the Proof of Concept (POC) dashboard for the [AlmaLinux + Oracle Pi Day 2022](https://314piday.com/), where we presented this POC to showcase the capabilities of Oracle JET together with Raspberry Pi.
 
-Finally, remember to check out the front-end code in [this repository.](https://github.com/peppertech/FormulaPi)
+Finally, remember to check out the front-end code in [this repository](https://github.com/peppertech/FormulaPi).
 
 ## How can I get started on OCI?
 
-Remember that you can always sign up for free with OCI! Your Oracle Cloud account provides a number of Always Free services and a Free Trial with US$300 of free credit to use on all eligible OCI services for up to 30 days. These Always Free services are available for an **unlimited** period of time. The Free Trial services may be used until your US$300 of free credits are consumed or the 30 days has expired, whichever comes first. You can [sign up here for free](https://signup.cloud.oracle.com/).
+Remember that you can always sign up for free with OCI! Your Oracle Cloud account provides a number of Always Free services and a Free Trial with US$300 of free credit to use on all eligible OCI services for up to 30 days. These Always Free services are available for an **unlimited** period of time. The Free Trial services may be used until your US$300 of free credits are consumed or the 30 days has expired, whichever comes first. You can [sign up here for free](https://signup.cloud.oracle.com/?language=en_US&sourceType=:ex:tb:::::RC_WWMK220210P00062:Medium_nachoF12021telemetry&SC=:ex:tb:::::RC_WWMK220210P00062:Medium_nachoF12021telemetry&pcode=WWMK220210P00062).
 
 ## Join the conversation!
 
-If you’re curious about the goings-on of Oracle Developers in their natural habitat, come join us on our public Slack channel! We don’t mind being your fish bowl 🐠
+If you’re curious about the goings-on of Oracle Developers in their natural habitat, come [join us on our public Slack channel](https://join.slack.com/t/oracledevrel/shared_invite/zt-uffjmwh3-ksmv2ii9YxSkc6IpbokL1g?customTrackingParam=:ex:tb:::::)! We don’t mind being your fish bowl 🐠
 
 ## License
 
@@ -319,4 +319,4 @@ Copyright (c) 2021 Oracle and/or its affiliates.
 
 Licensed under the Universal Permissive License (UPL), Version 1.0.
 
-See [LICENSE](../LICENSE) for more details.
+See [LICENSE](https://github.com/jasperan/f1-telemetry-oracle/blob/main/LICENSE) for more details.
