@@ -1,10 +1,10 @@
 # Connecting F1 2021 Telemetry with Oracle JET
 
-In this article, we're going to talk about how to use telemetry data from F1 2021, a videogame developed by Codemasters and display this data in real time using Oracle JET.
+In this article, we're going to talk about how to use telemetry data from F1 2021, a videogame developed by Codemasters and display this data in real time using [Oracle JET](https://oracle.com/jet).
 
 # Introduction
 
-Oracle JET (JavaScript Extension Toolkit) is a technology developed by Oracle that acts as an extension of commands for developing both mobile applications and browser-based user interfaces with ease. It's targeted for JavaScript developers working on client-side applications. By packaging several open-source JavaScript libraries together with Oracle JavaScript libraries, it makes building applications very simple and efficient; and we also have the advantage of an easier interaction with other Oracle productrs and services (especially Oracle Cloud Infrastructure services).
+[Oracle JET](https://oracle.com/jet) (JavaScript Extension Toolkit) is a technology developed by Oracle that acts as an extension of commands for developing both mobile applications and browser-based user interfaces with ease. It's targeted for JavaScript developers working on client-side applications. By packaging several open-source JavaScript libraries together with Oracle JavaScript libraries, it makes building applications very simple and efficient; and we also have the advantage of an easier interaction with other Oracle productrs and services (especially Oracle Cloud Infrastructure services).
 
 From the videogame, we're able to extract telemetry data using in-game's telemetry features. This includes packets of the following types:
 - Motion data
