@@ -1,7 +1,6 @@
 import datetime
 import copy
 import json
-import pickle
 from pathlib import Path
 
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
@@ -12,6 +11,8 @@ from oracledb import OracleJSONDatabaseConnection
 # using time module
 import time
 import argparse
+
+
 
 cli_parser = argparse.ArgumentParser(
     description="Script that records telemetry F1 2021 weather data into an Autonomous JSON Database"
@@ -33,6 +34,8 @@ def _get_listener():
         exit(127)
 
 listener = _get_listener()
+
+
 
 # get weather data and insert it into database.
 def main():

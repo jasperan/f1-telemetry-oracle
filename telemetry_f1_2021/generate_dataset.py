@@ -1,6 +1,9 @@
-import cx_Oracle
 from oracledb import OracleJSONDatabaseConnection
 import json 
+
+'''
+This file creates a collection, retrieves all elements from it, and saves it into weather.json
+'''
 
 jsondb = OracleJSONDatabaseConnection()
 
