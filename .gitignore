@@ -132,3 +132,16 @@ dmypy.json
 
 # Ignore config.yaml for Oracle Autonomous Database
 config.yaml
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+.terraformrc
+terraform.rc
