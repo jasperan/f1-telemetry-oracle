@@ -32,10 +32,6 @@ variable "config_file_profile" {
   type = string
 }
 
-variable "riotgames_api_key" {
-  type = string
-}
-
 variable "instant_client_lib_dir" {
   type    = string
   default = "/usr/lib/oracle/21/client64/lib"

@@ -11,7 +11,7 @@
 Open OCI Console, and click Cloud Shell.
 
 ```
-git clone --branch livelabs https://github.com/jasperan/f1-telemetry-oracle.git
+git clone https://github.com/jasperan/f1-telemetry-oracle.git
 ```
 
 Change to `f1-telemetry-oracle` directory:
@@ -47,6 +47,11 @@ Get details for the `terraform.tfvars` file:
   ```
   cat ~/.ssh/id_rsa.pub
   ```
+  > If there isn't already a public key created, run the following command:
+  > ```
+  > ssh-keygen
+  > ```
+  > And select all defaults. Then, try running the command again.
 
 
 Edit the values with `vim` or `nano` with your tenancy, compartment, ssh public key and Riot API key:

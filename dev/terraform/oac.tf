@@ -19,7 +19,6 @@ variable "analytics_instance_name" {
   default = "OAC"
 }
 
-variable "analytics_instance_idcs_access_token" {}
 
 
 resource "oci_analytics_analytics_instance" "oac_instance" {
@@ -31,7 +30,6 @@ resource "oci_analytics_analytics_instance" "oac_instance" {
     }
     compartment_id = var.compartment_ocid
     feature_set = var.analytics_instance_feature_set
-    idcs_access_token = var.analytics_instance_idcs_access_token
     license_type = var.analytics_instance_license_type
     name = var.analytics_instance_name
 
