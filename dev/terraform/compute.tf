@@ -1,5 +1,5 @@
 variable "instance_name" {
-  default = "rbr"
+  default = "lol"
 }
 
 variable "instance_shape" {
@@ -7,7 +7,7 @@ variable "instance_shape" {
 }
 
 variable "instance_ocpus" {
-  default = 4
+  default = 1
 }
 
 variable "instance_shape_config_memory_in_gbs" {
@@ -54,7 +54,7 @@ resource "oci_core_instance" "compute" {
 
   source_details {
     source_type = "image"
-    source_id   = data.oci_core_images.images.id
+    source_id   = data.oci_core_images.images.images[0].id
   }
 
   timeouts {
