@@ -40,7 +40,7 @@
 - name: Install Setup Tools
   command: sudo yum install python3-setuptools -y
 - name: Install dependencies
-  command: python3 -m pip install -r /home/opc/src/requirements.txt --user
+  command: pip install -r /home/opc/src/requirements.txt --user
 - name: FIXME probably not needed chown opc:opc for pythonapp and venv
   file:
     dest=/home/opc/src
