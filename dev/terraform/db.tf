@@ -31,7 +31,7 @@ resource "random_password" "autonomous_database_admin_password" {
 resource "oci_database_autonomous_database" "adb" {
   #Required
   compartment_id = var.compartment_ocid
-  db_name        = "${var.autonomous_database_db_name}${random_string.deploy_id.result}"
+  db_name        = "${var.autonomous_database_db_name}"
 
   #Optional
   admin_password              = random_password.autonomous_database_admin_password.result
