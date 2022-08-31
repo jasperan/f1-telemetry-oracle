@@ -7,7 +7,7 @@ from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
 from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
 from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
 from telemetry_f1_2021.listener import TelemetryListener
-from oracle_database import OracleJSONDatabaseConnection
+from oracle_database import OracleJSONDatabaseThickConnection
 # using time module
 import time
 import argparse
@@ -40,7 +40,7 @@ listener = _get_listener()
 # get weather data and insert it into database.
 def main():
     # Get connection to db.
-    dbhandler = OracleJSONDatabaseConnection()
+    dbhandler = OracleJSONDatabaseThickConnection()
 
     try:
         read_data_inf(dbhandler)
