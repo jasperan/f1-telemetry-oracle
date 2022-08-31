@@ -7,7 +7,7 @@ from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
 from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
 from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
 from telemetry_f1_2021.listener import TelemetryListener
-from oracledb import OracleJSONDatabaseConnection
+from oracle_database import OracleJSONDatabaseConnection
 # using time module
 import time
 import argparse

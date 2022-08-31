@@ -29,7 +29,6 @@ def db_connectivity():
 
 
 
-
 def main():
     print("Checking setup...")
     db_connectivity()
