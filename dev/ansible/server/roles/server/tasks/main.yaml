@@ -38,7 +38,7 @@
 - name: python3 -> Python 3.9
   command: update-alternatives --set python3 /usr/bin/python3.9
 - name: Install Setup Tools
-  command: sudo yum install python3-setuptools python-setuptools -y
+  command: sudo yum install python3-setuptools -y
 - name: Install Setup Tools (2)
   command: python3 -m pip install -U setuptools
 - name: Install dependencies
