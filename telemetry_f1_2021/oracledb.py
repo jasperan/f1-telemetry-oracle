@@ -32,7 +32,7 @@ class OracleJSONDatabaseThinConnection:
         try:
             x_collection.insertOne(json_object_to_insert)
             print('[DBG] INSERT {} OK'.format(json_object_to_insert))
-        except cx_Oracle.IntegrityError as e:
+        except oracledb.IntegrityError as e:
             print('[DBG] INSERT {} ERR: {} '.format(json_object_to_insert, e))
             return -1
         self.pool.release(connection)
@@ -91,7 +91,7 @@ class OracleJSONDatabaseThickConnection:
         try:
             x_collection.insertOne(json_object_to_insert)
             print('[DBG] INSERT {} OK'.format(json_object_to_insert))
-        except cx_Oracle.IntegrityError as e:
+        except oracledb.IntegrityError as e:
             print('[DBG] INSERT {} ERR: {} '.format(json_object_to_insert, e))
             return -1
         self.pool.release(connection)
