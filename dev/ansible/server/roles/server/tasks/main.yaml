@@ -19,18 +19,18 @@
     update_cache: yes
 - name: Copy Wallet
   unarchive:
-    src: "../../../../terraform/generated/wallet.zip"
+    src: "../../../../../terraform/generated/wallet.zip"
     dest: "/usr/lib/oracle/21/client64/lib/network/admin/"
 - name: Copy generated dotenv
   copy:
-    src: "../../../../terraform/generated/.env"
+    src: "../../../../../terraform/generated/.env"
     dest: /home/opc/src/
     owner: opc
     group: opc
     mode: 0640
 - name: Copy source code
   copy:
-    src: "../../../../../telemetry_f1_2021/"
+    src: "../../../../../../telemetry_f1_2021/"
     dest: /home/opc/src/
     owner: opc
     group: opc        
