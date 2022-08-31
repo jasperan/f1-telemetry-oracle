@@ -38,9 +38,11 @@
 - name: python3 -> Python 3.9
   command: update-alternatives --set python3 /usr/bin/python3.9
 - name: Install Setup Tools
-  command: sudo yum install python3-setuptools -y
+  command: sudo yum install python3-setuptools python-setuptools -y
+- name: Install Setup Tools (2)
+  command: python3 -m pip install -U setuptools
 - name: Install dependencies
-  command: pip install -r /home/opc/src/requirements.txt --user
+  command: python3 -m pip install -r /home/opc/src/requirements.txt
 - name: FIXME probably not needed chown opc:opc for pythonapp and venv
   file:
     dest=/home/opc/src
