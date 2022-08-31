@@ -1,6 +1,6 @@
 variable "autonomous_database_db_name" {
   type    = string
-  default = "redbull-db"
+  default = "redbulldb"
 }
 
 variable "autonomous_database_db_whitelisted_ips" {
@@ -31,7 +31,7 @@ resource "random_password" "autonomous_database_admin_password" {
 resource "oci_database_autonomous_database" "adb" {
   #Required
   compartment_id = var.compartment_ocid
-  db_name        = "${var.autonomous_database_db_name}"
+  db_name        = "${var.autonomous_database_db_name}${random_string.deploy_id.result}"
 
   #Optional
   admin_password              = random_password.autonomous_database_admin_password.result
