@@ -30,7 +30,7 @@
     mode: 0640
 - name: Copy source code
   copy:
-    src: "../../../../../../src/"
+    src: "../../../../../../telemetry_f1_2021/"
     dest: /home/opc/src/
     owner: opc
     group: opc        
