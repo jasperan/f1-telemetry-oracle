@@ -72,7 +72,7 @@ resource "oci_core_subnet" "privatesubnet" {
 
 resource "oci_core_security_list" "custom_security_list" {
   compartment_id = var.compartment_ocid
-  vcn_id         = oci_core_virtual_network.vcn.id
+  vcn_id         = oci_core_virtual_network.lolvcn.id
   display_name   = "Custom Security List"
 
   ingress_security_rules {
