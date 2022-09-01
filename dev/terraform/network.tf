@@ -52,7 +52,7 @@ resource "oci_core_subnet" "publicsubnet" {
   vcn_id            = oci_core_virtual_network.lolvcn.id
   display_name      = "public subnet"
   dns_label         = "rbrpublic"
-  security_list_ids = [oci_core_virtual_network.lolvcn.default_security_list_id]
+  security_list_ids = [oci_core_virtual_network.lolvcn.default_security_list_id, oci_core_security_list.custom_security_list.id]
   route_table_id    = oci_core_virtual_network.lolvcn.default_route_table_id
   dhcp_options_id   = oci_core_virtual_network.lolvcn.default_dhcp_options_id
 }
@@ -67,4 +67,23 @@ resource "oci_core_subnet" "privatesubnet" {
   security_list_ids          = [oci_core_virtual_network.lolvcn.default_security_list_id]
   route_table_id             = oci_core_route_table.route_table_private.id
   dhcp_options_id            = oci_core_virtual_network.lolvcn.default_dhcp_options_id
+}
+
+
+resource "oci_core_security_list" "custom_security_list" {
+  compartment_id = var.compartment_ocid
+  vcn_id         = oci_core_virtual_network.vcn.id
+  display_name   = "Custom Security List"
+
+  ingress_security_rules {
+    protocol  = "6" // tcp
+    source    = "0.0.0.0/0"
+    stateless = false
+
+    tcp_options {
+      min = 20777
+      max = 20777
+    }
+  }
+
 }
