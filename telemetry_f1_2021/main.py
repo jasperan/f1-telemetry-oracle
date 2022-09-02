@@ -11,6 +11,13 @@ from oracle_database import OracleJSONDatabaseThickConnection
 # using time module
 import time
 import argparse
+import oracledb
+import yaml
+import os
+
+def process_yaml():
+	with open("../config.yaml") as file:
+		return yaml.safe_load(file)
 
 
 
@@ -19,6 +26,9 @@ cli_parser = argparse.ArgumentParser(
 )
 
 cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
+cli_parser.add_argument('-a', '--authentication', type=str, help='Authentication mode', choices=['cloudshell', 'configfile'], required=True)
+cli_parser.add_argument('-l', '--lib', type=str, help='Instant Client Lib Directory', required=True, default='/usr/lib/oracle/21/client64/lib/network/admin/')
+
 args = cli_parser.parse_args()
 
 
@@ -39,8 +49,11 @@ listener = _get_listener()
 
 # get weather data and insert it into database.
 def main():
+    # You must always call init_oracle_client() to use thick mode in any platform
+    oracledb.init_oracle_client(lib_dir=args.lib)
+
     # Get connection to db.
-    dbhandler = OracleJSONDatabaseThickConnection()
+    dbhandler = OracleJSONDatabaseThickConnection(args.authentication)
 
     try:
         read_data_inf(dbhandler)
@@ -49,56 +62,51 @@ def main():
         print('Stop the car, stop at pit exit.')
         print('Just pull over to the side.')
         dbhandler.close_pool()
-    except Exception:
-        listener = _get_listener()
-        read_data_inf(dbhandler)
-
+    except Exception as e:
+        print(e)
 
     dbhandler.close_pool()
 
 
 
 def read_data_inf(dbhandler):
-    try:
-        while True:
-            packet = listener.get()
-            # ts stores the time in seconds
-            ts = time.time()
-            #print('{}'.format(PacketSessionData.__class__))
-            if isinstance(packet, PacketSessionData):
-                save_packet_weather(dbhandler, packet, ts)
-                save_packet('PacketSessionData', dbhandler, packet)
-            elif isinstance(packet, PacketMotionData):
-                save_packet('PacketMotionData', dbhandler, packet)
-            elif isinstance(packet, PacketLapData):
-                save_packet('PacketLapData', dbhandler, packet)
-            elif isinstance(packet, PacketEventData):
-                save_packet('PacketEventData', dbhandler, packet)
-            elif isinstance(packet, PacketParticipantsData):
-                save_packet('PacketParticipantsData', dbhandler, packet)
-            elif isinstance(packet, PacketCarSetupData):
-                save_packet('PacketCarSetupData', dbhandler, packet)
-            elif isinstance(packet, PacketCarTelemetryData):
-                save_packet('PacketCarTelemetryData', dbhandler, packet)
-            elif isinstance(packet, PacketCarStatusData):
-                save_packet('PacketCarStatusData', dbhandler, packet)
-            elif isinstance(packet, PacketFinalClassificationData):
-                save_packet('PacketFinalClassificationData', dbhandler, packet)
-            elif isinstance(packet, PacketLobbyInfoData):
-                save_packet('PacketLobbyInfoData', dbhandler, packet)
-            elif isinstance(packet, PacketCarDamageData):
-                save_packet('PacketCarDamageData', dbhandler, packet)
-            elif isinstance(packet, PacketSessionHistoryData):
-                save_packet('PacketSessionHistoryData', dbhandler, packet)
-    except Exception:
-        read_data_inf(dbhandler)
+    while True:
+        packet = listener.get()
+        # ts stores the time in seconds
+        ts = time.time()
+        #print('{}'.format(PacketSessionData.__class__))
+        if isinstance(packet, PacketSessionData):
+            save_packet_weather(dbhandler, packet, ts)
+            save_packet('PacketSessionData', dbhandler, packet)
+        elif isinstance(packet, PacketMotionData):
+            save_packet('PacketMotionData', dbhandler, packet)
+        elif isinstance(packet, PacketLapData):
+            save_packet('PacketLapData', dbhandler, packet)
+        elif isinstance(packet, PacketEventData):
+            save_packet('PacketEventData', dbhandler, packet)
+        elif isinstance(packet, PacketParticipantsData):
+            save_packet('PacketParticipantsData', dbhandler, packet)
+        elif isinstance(packet, PacketCarSetupData):
+            save_packet('PacketCarSetupData', dbhandler, packet)
+        elif isinstance(packet, PacketCarTelemetryData):
+            save_packet('PacketCarTelemetryData', dbhandler, packet)
+        elif isinstance(packet, PacketCarStatusData):
+            save_packet('PacketCarStatusData', dbhandler, packet)
+        elif isinstance(packet, PacketFinalClassificationData):
+            save_packet('PacketFinalClassificationData', dbhandler, packet)
+        elif isinstance(packet, PacketLobbyInfoData):
+            save_packet('PacketLobbyInfoData', dbhandler, packet)
+        elif isinstance(packet, PacketCarDamageData):
+            save_packet('PacketCarDamageData', dbhandler, packet)
+        elif isinstance(packet, PacketSessionHistoryData):
+            save_packet('PacketSessionHistoryData', dbhandler, packet)
 
 
 
 def save_weather_object(collection_name, dbhandler, dict_object):
     res = dbhandler.insert(collection_name, dict_object)
     if res == 0: # error
-        pass
+        print('{} | INSERT WEATHER OBJECT ERR'.format(datetime.datetime.now()))
     else:
         print('{} | INSERT {} OK'.format(datetime.datetime.now(), dict_object['timestamp']))
 
@@ -107,7 +115,7 @@ def save_weather_object(collection_name, dbhandler, dict_object):
 def save_oracle_db(collection_name, dbhandler, dict_object):
     res = dbhandler.insert(collection_name, dict_object)
     if res == 0: # error
-        pass
+        print('{} | INSERT {} OBJECT ERR'.format(collection_name, datetime.datetime.now()))
     elif res == -1:
         print('{} | INSERT INTO {} STRUCTURAL ERROR'.format(datetime.datetime.now(), collection_name))
     else:

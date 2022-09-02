@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import oracledb
+import yaml
 
 load_dotenv()
 
@@ -12,11 +13,21 @@ oracledb_password = os.getenv("DB_PASSWORD")
 oracledb_connection_string = os.getenv("CONNECTION_STRING")
 instant_client_lib_dir = os.getenv("INSTANT_CLIENT_LIB_DIR")
 
+def process_yaml():
+	with open("../config.yaml") as file:
+		return yaml.safe_load(file)
 
-class OracleJSONDatabaseThinConnection:
-    def __init__(self):
-        self.pool = oracledb.create_pool(user=oracledb_user, password=oracledb_password, dsn=oracledb_connection_string,
-                                         min=1, max=4, increment=1, getmode=oracledb.POOL_GETMODE_WAIT)
+
+class OracleJSONDatabaseThinConnection():
+    def __init__(self, authentication_mode):
+        if authentication_mode == 'cloudshell':
+            self.pool = oracledb.create_pool(user=oracledb_user, password=oracledb_password, dsn=oracledb_connection_string,
+                                            min=1, max=4, increment=1, getmode=oracledb.POOL_GETMODE_WAIT)
+        elif authentication_mode == 'configfile':
+            data = process_yaml()
+            self.pool = oracledb.create_pool(user=data['db']['username'], password=data['db']['password'], dsn=data['db']['dsn'],
+                                            min=1, max=4, increment=1, getmode=oracledb.POOL_GETMODE_WAIT)
+
         print('Connection successful.')
 
     def close_pool(self):
@@ -71,16 +82,26 @@ class OracleJSONDatabaseThinConnection:
         return returning_object
 
 
-class OracleJSONDatabaseThickConnection:
-    def __init__(self):
-        oracledb.init_oracle_client(lib_dir=instant_client_lib_dir)
-        self.pool = oracledb.create_pool(user=oracledb_user, password=oracledb_password, dsn=oracledb_connection_string,
-                                         min=1, max=4, increment=1, getmode=oracledb.POOL_GETMODE_WAIT)
-        print('Connection successful.')
+class OracleJSONDatabaseThickConnection():
+    def __init__(self, authentication_mode):
+    
+        # You must always call init_oracle_client() to use thick mode in any platform
+        if authentication_mode == 'cloudshell':
+            self.pool = oracledb.create_pool(user=oracledb_user, password=oracledb_password, dsn=oracledb_connection_string,
+                                            min=1, max=4, increment=1, getmode=oracledb.POOL_GETMODE_WAIT)
+            oracledb.init_oracle_client(lib_dir=instant_client_lib_dir)
+        elif authentication_mode == 'configfile':
+            data = process_yaml()
+            self.pool = oracledb.create_pool(user=data['db']['username'], password=data['db']['password'], dsn=data['db']['dsn'],
+                                            min=1, max=4, increment=1, getmode=oracledb.POOL_GETMODE_WAIT)
+            oracledb.init_oracle_client(lib_dir=data['db']['lib_dir'])
+
+
 
     def close_pool(self):
         self.pool.close()
         print('Connection pool closed.')
+
 
     def insert(self, collection_name, json_object_to_insert):
         connection = self.pool.acquire()
@@ -96,6 +117,7 @@ class OracleJSONDatabaseThickConnection:
             return -1
         self.pool.release(connection)
         return 1
+
 
     def delete(self, collection_name, on_column, on_value):
         connection = self.pool.acquire()
