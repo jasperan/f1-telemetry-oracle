@@ -27,7 +27,7 @@ cli_parser = argparse.ArgumentParser(
 
 cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
 cli_parser.add_argument('-a', '--authentication', type=str, help='Authentication mode', choices=['cloudshell', 'configfile'], required=True)
-cli_parser.add_argument('-l', '--lib', type=str, help='Instant Client Lib Directory', required=True, default='/usr/lib/oracle/21/client64/lib/network/admin/')
+cli_parser.add_argument('-l', '--lib', type=str, help='Instant Client Lib Directory', required=False, default='/usr/lib/oracle/21/client64/lib/network/admin/')
 
 args = cli_parser.parse_args()
 
