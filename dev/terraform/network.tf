@@ -76,7 +76,7 @@ resource "oci_core_security_list" "custom_security_list" {
   display_name   = "Custom Security List"
 
   ingress_security_rules {
-    protocol  = "6" // tcp
+    protocol  = "17" // udp
     source    = "0.0.0.0/0"
     stateless = false
 

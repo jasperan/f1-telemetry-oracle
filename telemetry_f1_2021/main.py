@@ -64,42 +64,48 @@ def main():
         dbhandler.close_pool()
     except Exception as e:
         print(e)
+        dbhandler.close_pool()
+        exit(-1)
 
     dbhandler.close_pool()
 
 
 
+# warning: recursive function, supposed to run indefinitely, but causes memory overflows if it includes exceptions.
 def read_data_inf(dbhandler):
-    while True:
-        packet = listener.get()
-        # ts stores the time in seconds
-        ts = time.time()
-        #print('{}'.format(PacketSessionData.__class__))
-        if isinstance(packet, PacketSessionData):
-            save_packet_weather(dbhandler, packet, ts)
-            save_packet('PacketSessionData', dbhandler, packet)
-        elif isinstance(packet, PacketMotionData):
-            save_packet('PacketMotionData', dbhandler, packet)
-        elif isinstance(packet, PacketLapData):
-            save_packet('PacketLapData', dbhandler, packet)
-        elif isinstance(packet, PacketEventData):
-            save_packet('PacketEventData', dbhandler, packet)
-        elif isinstance(packet, PacketParticipantsData):
-            save_packet('PacketParticipantsData', dbhandler, packet)
-        elif isinstance(packet, PacketCarSetupData):
-            save_packet('PacketCarSetupData', dbhandler, packet)
-        elif isinstance(packet, PacketCarTelemetryData):
-            save_packet('PacketCarTelemetryData', dbhandler, packet)
-        elif isinstance(packet, PacketCarStatusData):
-            save_packet('PacketCarStatusData', dbhandler, packet)
-        elif isinstance(packet, PacketFinalClassificationData):
-            save_packet('PacketFinalClassificationData', dbhandler, packet)
-        elif isinstance(packet, PacketLobbyInfoData):
-            save_packet('PacketLobbyInfoData', dbhandler, packet)
-        elif isinstance(packet, PacketCarDamageData):
-            save_packet('PacketCarDamageData', dbhandler, packet)
-        elif isinstance(packet, PacketSessionHistoryData):
-            save_packet('PacketSessionHistoryData', dbhandler, packet)
+    try:
+        while True:
+            packet = listener.get()
+            # ts stores the time in seconds
+            ts = time.time()
+            #print('{}'.format(PacketSessionData.__class__))
+            if isinstance(packet, PacketSessionData):
+                save_packet_weather(dbhandler, packet, ts)
+                save_packet('PacketSessionData', dbhandler, packet)
+            elif isinstance(packet, PacketMotionData):
+                save_packet('PacketMotionData', dbhandler, packet)
+            elif isinstance(packet, PacketLapData):
+                save_packet('PacketLapData', dbhandler, packet)
+            elif isinstance(packet, PacketEventData):
+                save_packet('PacketEventData', dbhandler, packet)
+            elif isinstance(packet, PacketParticipantsData):
+                save_packet('PacketParticipantsData', dbhandler, packet)
+            elif isinstance(packet, PacketCarSetupData):
+                save_packet('PacketCarSetupData', dbhandler, packet)
+            elif isinstance(packet, PacketCarTelemetryData):
+                save_packet('PacketCarTelemetryData', dbhandler, packet)
+            elif isinstance(packet, PacketCarStatusData):
+                save_packet('PacketCarStatusData', dbhandler, packet)
+            elif isinstance(packet, PacketFinalClassificationData):
+                save_packet('PacketFinalClassificationData', dbhandler, packet)
+            elif isinstance(packet, PacketLobbyInfoData):
+                save_packet('PacketLobbyInfoData', dbhandler, packet)
+            elif isinstance(packet, PacketCarDamageData):
+                save_packet('PacketCarDamageData', dbhandler, packet)
+            elif isinstance(packet, PacketSessionHistoryData):
+                save_packet('PacketSessionHistoryData', dbhandler, packet)
+    except Exception as e:
+        read_data_inf(dbhandler)
 
 
 
@@ -123,7 +129,7 @@ def save_oracle_db(collection_name, dbhandler, dict_object):
 
 
 
-# method used only for weather data for AIHack2022
+# method used only for weather data
 def save_packet_weather(dbhandler, packet, timestamp):
     dict_object = packet.to_dict()
     dict_object['timestamp'] = int(timestamp) # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
