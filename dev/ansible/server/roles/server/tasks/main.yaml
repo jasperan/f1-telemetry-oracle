@@ -47,3 +47,11 @@
     owner=opc
     group=opc
     recurse=yes
+- name: Disable Selinux Firewall
+  command: sudo setenforce 0 && sudo sestatus
+- name: Enable firewalld
+  command: sudo systemctl enable firewalld
+- name: Restart firewalld
+  command: sudo systemctl restart firewalld
+- name: Allow port 20777
+  command: sudo firewall-cmd --add-port=20777/udp --permanent
