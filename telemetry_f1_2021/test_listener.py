@@ -5,14 +5,14 @@ from pathlib import Path
 from re import A
 
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
-from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
+from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, \
+    PacketParticipantsData, PacketCarDamageData
+from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, \
+    PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
 from telemetry_f1_2021.listener import TelemetryListener
 # using time module
 import time
 import argparse
-
-
 
 cli_parser = argparse.ArgumentParser(
     description="Script that records telemetry F1 2021 weather data into an Autonomous JSON Database"
@@ -21,25 +21,24 @@ cli_parser = argparse.ArgumentParser(
 cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
 args = cli_parser.parse_args()
 
-
 global listener
+
 
 def _get_listener():
     try:
         print('Starting listener on localhost:20777')
         return TelemetryListener()
     except OSError as exception:
-        print('Unable to setup connection: {}'.format(exception.args[1]))
+        print(f'Unable to setup connection: {exception.args[1]}')
         print('Failed to open connector, stopping.')
         exit(127)
+
 
 listener = _get_listener()
 
 
-
 # get weather data and insert it into database.
 def main():
-
     try:
         read_data_inf()
     except KeyboardInterrupt:
@@ -50,15 +49,13 @@ def main():
         print(e)
 
 
-
-
 def read_data_inf():
     try:
         while True:
             packet = listener.get()
             # ts stores the time in seconds
             ts = time.time()
-            #print('{}'.format(PacketSessionData.__class__))
+            # print('{}'.format(PacketSessionData.__class__))
             if isinstance(packet, PacketSessionData):
                 save_packet_weather(packet, ts)
                 save_packet('PacketSessionData', packet)
@@ -88,33 +85,29 @@ def read_data_inf():
         print(e)
 
 
-
 def save_weather_object(collection_name, dict_object):
-    print('{} | INSERT {} OK'.format(datetime.datetime.now(), dict_object['timestamp']))
-
+    print(f"{datetime.datetime.now()} | INSERT {dict_object['timestamp']} OK")
 
 
 def save_oracle_db(collection_name, dict_object):
-    print('{} | INSERT INTO {} OK'.format(datetime.datetime.now(), collection_name))
-
+    print(f'{datetime.datetime.now()} | INSERT INTO {collection_name} OK')
 
 
 # method used only for weather data for AIHack2022
 def save_packet_weather(packet, timestamp):
     dict_object = packet.to_dict()
-    dict_object['timestamp'] = int(timestamp) # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
+    dict_object['timestamp'] = int(
+        timestamp)  # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
     dict_object['gamehost'] = args.gamehost
 
     # Load into Oracle DB
     save_weather_object('f1_2021_weather', dict_object)
 
 
-
 def save_packet(collection_name, packet):
     dict_object = packet.to_json()
     # Load into Oracle DB
     save_oracle_db(collection_name, dict_object)
-
 
 
 def save_packets():
@@ -148,11 +141,10 @@ def save_packets():
             pickle.dump(packet, fh, protocol=pickle.HIGHEST_PROTOCOL)
         '''
 
-        with open('{}/example_packets/json/{}.json'.format(root_dir, packet_name), 'w') as fh:
+        with open(f'{root_dir}/example_packets/json/{packet_name}.json', 'w') as fh:
             json.dump(packet.to_dict(), fh, indent=2)
 
     print('Done!')
-
 
 
 if __name__ == '__main__':

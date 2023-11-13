@@ -7,4 +7,4 @@ dbhandler = OracleJSONDatabaseConnection()
 '''
 Code is commented to prevent accidental executions
 '''
-#dbhandler.delete('f1_2021_weather', 'timestamp', {"$gt": 1642463000})
+# dbhandler.delete('f1_2021_weather', 'timestamp', {"$gt": 1642463000})

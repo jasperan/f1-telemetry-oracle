@@ -28,7 +28,6 @@ def db_connectivity():
         print(f'{fail_string}DB Connectivity: {e.args.message}')
 
 
-
 def main():
     print("Checking setup...")
     db_connectivity()
