@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
-from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
+from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, \
+    PacketParticipantsData, PacketCarDamageData
+from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, \
+    PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
 from telemetry_f1_2021.listener import TelemetryListener
 from oracle_database import OracleJSONDatabaseThickConnection
 # using time module
@@ -15,10 +17,10 @@ import oracledb
 import yaml
 import os
 
-def process_yaml():
-	with open("../config.yaml") as file:
-		return yaml.safe_load(file)
 
+def process_yaml():
+    with open("../config.yaml") as file:
+        return yaml.safe_load(file)
 
 
 cli_parser = argparse.ArgumentParser(
@@ -26,25 +28,27 @@ cli_parser = argparse.ArgumentParser(
 )
 
 cli_parser.add_argument('-g', '--gamehost', type=str, help='Gamehost identifier (something unique)', required=True)
-cli_parser.add_argument('-a', '--authentication', type=str, help='Authentication mode', choices=['cloudshell', 'configfile'], required=True)
-cli_parser.add_argument('-l', '--lib', type=str, help='Instant Client Lib Directory', required=False, default='/usr/lib/oracle/21/client64/lib')
+cli_parser.add_argument('-a', '--authentication', type=str, help='Authentication mode',
+                        choices=['cloudshell', 'configfile'], required=True)
+cli_parser.add_argument('-l', '--lib', type=str, help='Instant Client Lib Directory', required=False,
+                        default='/usr/lib/oracle/21/client64/lib')
 
 args = cli_parser.parse_args()
 
-
 global listener
+
 
 def _get_listener():
     try:
         print('Starting listener on localhost:20777')
         return TelemetryListener()
     except OSError as exception:
-        print('Unable to setup connection: {}'.format(exception.args[1]))
+        print(f'Unable to setup connection: {exception.args[1]}')
         print('Failed to open connector, stopping.')
         exit(127)
 
-listener = _get_listener()
 
+listener = _get_listener()
 
 
 # get weather data and insert it into database.
@@ -70,7 +74,6 @@ def main():
     dbhandler.close_pool()
 
 
-
 # warning: recursive function, supposed to run indefinitely, but causes memory overflows if it includes exceptions.
 def read_data_inf(dbhandler):
     try:
@@ -78,7 +81,7 @@ def read_data_inf(dbhandler):
             packet = listener.get()
             # ts stores the time in seconds
             ts = time.time()
-            #print('{}'.format(PacketSessionData.__class__))
+            # print('{}'.format(PacketSessionData.__class__))
             if isinstance(packet, PacketSessionData):
                 save_packet_weather(dbhandler, packet, ts)
                 save_packet('PacketSessionData', dbhandler, packet)
@@ -108,43 +111,41 @@ def read_data_inf(dbhandler):
         read_data_inf(dbhandler)
 
 
-
 def save_weather_object(collection_name, dbhandler, dict_object):
     res = dbhandler.insert(collection_name, dict_object)
-    if res == 0: # error
-        print('{} | INSERT WEATHER OBJECT ERR'.format(datetime.datetime.now()))
+    if res == 0:  # error
+        print(f'{datetime.datetime.now()} | INSERT WEATHER OBJECT ERR')
     else:
-        print('{} | INSERT {} OK'.format(datetime.datetime.now(), dict_object['timestamp']))
-
+        print(f"{datetime.datetime.now()} | INSERT {dict_object['timestamp']} OK")
 
 
 def save_oracle_db(collection_name, dbhandler, dict_object):
     res = dbhandler.insert(collection_name, dict_object)
-    if res == 0: # error
-        print('{} | INSERT {} OBJECT ERR'.format(collection_name, datetime.datetime.now()))
+    if res == 0:  # error
+        print(f'{collection_name} | INSERT {datetime.datetime.now()} OBJECT ERR')
     elif res == -1:
-        print('{} | INSERT INTO {} STRUCTURAL ERROR'.format(datetime.datetime.now(), collection_name))
+        print(
+            f'{datetime.datetime.now()} | INSERT INTO {collection_name} STRUCTURAL ERROR'
+        )
     else:
-        print('{} | INSERT INTO {} OK'.format(datetime.datetime.now(), collection_name))
-
+        print(f'{datetime.datetime.now()} | INSERT INTO {collection_name} OK')
 
 
 # method used only for weather data
 def save_packet_weather(dbhandler, packet, timestamp):
     dict_object = packet.to_dict()
-    dict_object['timestamp'] = int(timestamp) # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
+    dict_object['timestamp'] = int(
+        timestamp)  # get integer timestamp for building the time series. We'll ignore 1/2 of all packets since we get 2 per second but it's not relevant for weather.
     dict_object['gamehost'] = args.gamehost
 
     # Load into Oracle DB
     save_weather_object('f1_2021_weather', dbhandler, dict_object)
 
 
-
 def save_packet(collection_name, dbhandler, packet):
     dict_object = packet.to_json()
     # Load into Oracle DB
     save_oracle_db(collection_name, dbhandler, dict_object)
-
 
 
 def save_packets():
@@ -179,11 +180,10 @@ def save_packets():
             pickle.dump(packet, fh, protocol=pickle.HIGHEST_PROTOCOL)
         '''
 
-        with open('{}/example_packets/json/{}.json'.format(root_dir, packet_name), 'w') as fh:
+        with open(f'{root_dir}/example_packets/json/{packet_name}.json', 'w') as fh:
             json.dump(packet.to_dict(), fh, indent=2)
 
     print('Done!')
-
 
 
 if __name__ == '__main__':

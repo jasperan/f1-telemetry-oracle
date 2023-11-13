@@ -5,10 +5,11 @@ import pickle
 from pathlib import Path
 
 from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
-from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
+from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, \
+    PacketParticipantsData, PacketCarDamageData
+from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, \
+    PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
 from telemetry_f1_2021.listener import TelemetryListener
-
 
 # using time module
 import pika
@@ -27,25 +28,25 @@ def _get_listener():
         print('Starting listener on localhost:20777')
         return TelemetryListener()
     except OSError as exception:
-        print('Unable to setup connection: {}'.format(exception.args[1]))
+        print(f'Unable to setup connection: {exception.args[1]}')
         print('Failed to open connector, stopping.')
         exit(127)
 
 
 def main():
-
     connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
+        pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
     channel = connection.channel()
 
-
-    list_packet_types = ['PacketMotionData', 'PacketSessionData', 'PacketLapData', 'PacketEventData', 'PacketParticipantsData',
-        'PacketCarSetupData', 'PacketCarTelemetryData', 'PacketCarStatusData', 'PacketFinalClassificationData', 'PacketLobbyInfoData',
-        'PacketCarDamageData', 'PacketSessionHistoryData']
+    list_packet_types = ['PacketMotionData', 'PacketSessionData', 'PacketLapData', 'PacketEventData',
+                         'PacketParticipantsData',
+                         'PacketCarSetupData', 'PacketCarTelemetryData', 'PacketCarStatusData',
+                         'PacketFinalClassificationData', 'PacketLobbyInfoData',
+                         'PacketCarDamageData', 'PacketSessionHistoryData']
 
     # declare all queues
     for x in list_packet_types:
-        channel.queue_declare(queue='{}'.format(x))
+        channel.queue_declare(queue=f'{x}')
 
     listener = _get_listener()
 
@@ -76,7 +77,7 @@ def main():
                 save_packet('PacketCarDamageData', packet, channel)
             elif isinstance(packet, PacketSessionHistoryData):
                 save_packet('PacketSessionHistoryData', packet, channel)
-            
+
 
     except KeyboardInterrupt:
         print('Stop the car, stop the car Checo.')
@@ -85,14 +86,14 @@ def main():
         connection.close()
 
 
-
 def save_packet(collection_name, packet, channel):
     dict_object = packet.to_json()
 
-    channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
+    channel.basic_publish(
+        exchange='', routing_key=collection_name, body=f'{dict_object}'
+    )
 
-    print('{} | MQ {} OK'.format(datetime.datetime.now(), collection_name))
-
+    print(f'{datetime.datetime.now()} | MQ {collection_name} OK')
 
 
 def save_packets():
@@ -127,11 +128,10 @@ def save_packets():
             pickle.dump(packet, fh, protocol=pickle.HIGHEST_PROTOCOL)
         '''
 
-        with open('{}/example_packets/json/{}.json'.format(root_dir, packet_name), 'w') as fh:
+        with open(f'{root_dir}/example_packets/json/{packet_name}.json', 'w') as fh:
             json.dump(packet.to_dict(), fh, indent=2)
 
     print('Done!')
-
 
 
 if __name__ == '__main__':

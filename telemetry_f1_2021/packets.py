@@ -82,10 +82,7 @@ class PacketMixin(object):
         if isinstance(value, ctypes.Array):
             return _format_array_type(value)
 
-        if hasattr(value, "to_dict"):
-            return value.to_dict()
-
-        return value
+        return value.to_dict() if hasattr(value, "to_dict") else value
 
 
 def _format_array_type(value):
