@@ -25,6 +25,10 @@ dev = [
     "ruff>=0.8.0",
     "httpx",
     "respx>=0.22.0",
+    "scikit-learn>=1.5.0",
+    "onnx>=1.16.0",
+    "skl2onnx>=1.17.0",
+    "onnxruntime>=1.18.0",
 ]
 
 [build-system]
