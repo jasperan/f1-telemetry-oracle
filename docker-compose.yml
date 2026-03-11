@@ -1,7 +1,7 @@
 services:
   oracle-26ai:
-    image: gvenzl/oracle-free:26-slim
-    container_name: f1-oracle-26ai
+    image: gvenzl/oracle-free:23-slim
+    container_name: f1-oracle-23ai
     environment:
       ORACLE_PASSWORD: f1telemetry
       APP_USER: f1app
