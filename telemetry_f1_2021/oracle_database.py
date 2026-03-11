@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+
 import oracledb
 import yaml
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -18,7 +19,7 @@ def process_yaml():
 		return yaml.safe_load(file)
 
 
-class OracleJSONDatabaseThinConnection():
+class OracleJSONDatabaseThinConnection:
     def __init__(self, authentication_mode):
         if authentication_mode == 'cloudshell':
             self.pool = oracledb.create_pool(user=oracledb_user, password=oracledb_password, dsn=oracledb_connection_string,
@@ -42,9 +43,9 @@ class OracleJSONDatabaseThinConnection():
 
         try:
             x_collection.insertOne(json_object_to_insert)
-            print('[DBG] INSERT {} OK'.format(json_object_to_insert))
+            print(f'[DBG] INSERT {json_object_to_insert} OK')
         except oracledb.IntegrityError as e:
-            print('[DBG] INSERT {} ERR: {} '.format(json_object_to_insert, e))
+            print(f'[DBG] INSERT {json_object_to_insert} ERR: {e} ')
             return -1
         self.pool.release(connection)
         return 1
@@ -82,7 +83,7 @@ class OracleJSONDatabaseThinConnection():
         return returning_object
 
 
-class OracleJSONDatabaseThickConnection():
+class OracleJSONDatabaseThickConnection:
     def __init__(self, authentication_mode):
     
         # You must always call init_oracle_client() to use thick mode in any platform
@@ -111,9 +112,9 @@ class OracleJSONDatabaseThickConnection():
 
         try:
             x_collection.insertOne(json_object_to_insert)
-            print('[DBG] INSERT {} OK'.format(json_object_to_insert))
+            print(f'[DBG] INSERT {json_object_to_insert} OK')
         except oracledb.IntegrityError as e:
-            print('[DBG] INSERT {} ERR: {} '.format(json_object_to_insert, e))
+            print(f'[DBG] INSERT {json_object_to_insert} ERR: {e} ')
             return -1
         self.pool.release(connection)
         return 1

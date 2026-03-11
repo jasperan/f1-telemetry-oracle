@@ -7,7 +7,6 @@ import respx
 from collectors.ergast.collector import ErgastCollector
 from collectors.normalizer import NormalizedLap
 
-
 # A realistic Ergast API response for 2024 Italian GP results
 MOCK_ERGAST_RESPONSE = {
     "MRData": {

@@ -6,7 +6,6 @@ per-sample telemetry). This is the single source of truth for what gets written 
 
 from __future__ import annotations
 
-import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Any

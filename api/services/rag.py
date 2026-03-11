@@ -127,7 +127,7 @@ class ParsedQuery:
                 f"WHERE LOWER(c.name) LIKE '%{circuit}%' "
                 + (f"AND EXTRACT(YEAR FROM s.started_at) = {season} " if season else "")
                 + "ORDER BY l.position ASC "
-                f"FETCH FIRST 20 ROWS ONLY"
+                "FETCH FIRST 20 ROWS ONLY"
             )
 
         elif self.intent == "lap_analysis":

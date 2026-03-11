@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-import pika, sys, os
+import os
+import sys
+
+import pika
+
 
 def main():
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', heartbeat=600, blocked_connection_timeout=300))
@@ -11,7 +15,7 @@ def main():
 
     # declare all queues, in case the receiver is initialized before the producer.
     for x in list_packet_types:
-        channel.queue_declare(queue='{}'.format(x))
+        channel.queue_declare(queue=f'{x}')
 
 
     def callback(ch, method, properties, body):
@@ -19,7 +23,7 @@ def main():
 
     # consume all queues
     for x in list_packet_types:
-        channel.basic_consume(queue='{}'.format(x), on_message_callback=callback, auto_ack=True)
+        channel.basic_consume(queue=f'{x}', on_message_callback=callback, auto_ack=True)
     
 
     print(' [*] Waiting for messages. To exit press CTRL+C')

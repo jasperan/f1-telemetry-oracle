@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from collectors.f1_udp.decoder import (
-    F1PacketHeader,
     TRACK_MAP,
+    F1PacketHeader,
     decode_packet,
 )
 from collectors.normalizer import (

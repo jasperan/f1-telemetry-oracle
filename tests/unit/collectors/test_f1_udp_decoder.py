@@ -2,11 +2,8 @@
 
 import struct
 
-import pytest
-
 from collectors.f1_udp.decoder import (
     F1PacketHeader,
-    PACKET_IDS,
     decode_car_status_packet,
     decode_car_telemetry_packet,
     decode_header,

@@ -6,8 +6,8 @@ Uses FastAPI TestClient with a mocked OraclePool — no real Oracle DB required.
 from __future__ import annotations
 
 import contextlib
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator
 
 import pytest
 from fastapi import FastAPI

@@ -26,7 +26,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from api.config import Settings
 from collectors.ergast.collector import ErgastCollector
-from collectors.normalizer import NormalizedLap
 
 logging.basicConfig(
     level=logging.INFO,

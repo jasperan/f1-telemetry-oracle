@@ -1,9 +1,10 @@
 # Copyright (c) 2022 Oracle and/or its affiliates.
 
 import os
+
 import oracledb
-from dotenv import load_dotenv
 from colors import color
+from dotenv import load_dotenv
 
 load_dotenv()
 

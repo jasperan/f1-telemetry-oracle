@@ -1,18 +1,28 @@
-import datetime
+import argparse
 import copy
+import datetime
 import json
-import pickle
 from pathlib import Path
-
-from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
-from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
-from telemetry_f1_2021.listener import TelemetryListener
-
 
 # using time module
 import pika
-import argparse
+
+from telemetry_f1_2021.listener import TelemetryListener
+from telemetry_f1_2021.packets import (
+    HEADER_FIELD_TO_PACKET_TYPE,
+    PacketCarDamageData,
+    PacketCarSetupData,
+    PacketCarStatusData,
+    PacketCarTelemetryData,
+    PacketEventData,
+    PacketFinalClassificationData,
+    PacketLapData,
+    PacketLobbyInfoData,
+    PacketMotionData,
+    PacketParticipantsData,
+    PacketSessionData,
+    PacketSessionHistoryData,
+)
 
 cli_parser = argparse.ArgumentParser(
     description="Script that records telemetry F1 2021 weather data into a RabbitMQ queue"
@@ -27,7 +37,7 @@ def _get_listener():
         print('Starting listener on localhost:20777')
         return TelemetryListener()
     except OSError as exception:
-        print('Unable to setup connection: {}'.format(exception.args[1]))
+        print(f'Unable to setup connection: {exception.args[1]}')
         print('Failed to open connector, stopping.')
         exit(127)
 
@@ -45,7 +55,7 @@ def main():
 
     # declare all queues
     for x in list_packet_types:
-        channel.queue_declare(queue='{}'.format(x))
+        channel.queue_declare(queue=f'{x}')
 
     listener = _get_listener()
 
@@ -89,9 +99,9 @@ def main():
 def save_packet(collection_name, packet, channel):
     dict_object = packet.to_json()
 
-    channel.basic_publish(exchange='', routing_key=collection_name, body='{}'.format(dict_object))
+    channel.basic_publish(exchange='', routing_key=collection_name, body=f'{dict_object}')
 
-    print('{} | MQ {} OK'.format(datetime.datetime.now(), collection_name))
+    print(f'{datetime.datetime.now()} | MQ {collection_name} OK')
 
 
 
@@ -127,7 +137,7 @@ def save_packets():
             pickle.dump(packet, fh, protocol=pickle.HIGHEST_PROTOCOL)
         '''
 
-        with open('{}/example_packets/json/{}.json'.format(root_dir, packet_name), 'w') as fh:
+        with open(f'{root_dir}/example_packets/json/{packet_name}.json', 'w') as fh:
             json.dump(packet.to_dict(), fh, indent=2)
 
     print('Done!')

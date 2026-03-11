@@ -7,7 +7,6 @@ https://forums.codemasters.com/topic/
 
 import ctypes
 import json
-
 import logging
 
 logging.basicConfig(
@@ -29,7 +28,7 @@ def to_json(*args, **kwargs):
     return json.dumps(*args, **kwargs)
 
 
-class PacketMixin(object):
+class PacketMixin:
     """A base set of helper methods for ctypes based packets"""
 
     def get_value(self, field):

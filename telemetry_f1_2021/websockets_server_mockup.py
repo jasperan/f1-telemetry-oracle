@@ -1,21 +1,13 @@
-import asyncio
-import websockets
-import datetime
-import copy
-import json
-import pickle
-from pathlib import Path
-import random
-from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
-from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
-from telemetry_f1_2021.listener import TelemetryListener
-import time
 # using time module
 import argparse
+import asyncio
+import datetime
+import json
+
 import pika
+import websockets
 
-
+from telemetry_f1_2021.listener import TelemetryListener
 
 global _CURRENT_PACKET
 # Initialize message queue from where we're getting the data.
@@ -38,7 +30,7 @@ def _get_listener():
         print('Starting listener on localhost:20777')
         return TelemetryListener()
     except OSError as exception:
-        print('Unable to setup connection: {}'.format(exception.args[1]))
+        print(f'Unable to setup connection: {exception.args[1]}')
         print('Failed to open connector, stopping.')
         exit(127)
 
@@ -46,15 +38,15 @@ def _get_listener():
 
 # instead of having a random packet and randomizing, get from rabbitmq queue.
 def save_packet(collection_name):
-    print('{} | WS MOCKUP {} OK'.format(datetime.datetime.now(), collection_name))
+    print(f'{datetime.datetime.now()} | WS MOCKUP {collection_name} OK')
     channel.basic_qos(prefetch_count=1)
-    f = open('./example_packets/json/{}.json'.format(collection_name))
+    f = open(f'./example_packets/json/{collection_name}.json')
     body = json.load(f)
     f.close()
     try:
         _CURRENT_PACKET = body
         print(_CURRENT_PACKET)
-    except AttributeError as e:
+    except AttributeError:
         #print('AttributeError: {}'.format(e))
         _CURRENT_PACKET = {}
     #channel.start_consuming()

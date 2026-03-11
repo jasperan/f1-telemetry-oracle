@@ -4,7 +4,7 @@ Basic listener to read the UDP packet and convert it to a known packet format.
 
 import socket
 
-from telemetry_f1_2021.packets import PacketHeader, HEADER_FIELD_TO_PACKET_TYPE
+from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE, PacketHeader
 
 
 class TelemetryListener:

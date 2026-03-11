@@ -1,21 +1,11 @@
-import asyncio
-import websockets
-import datetime
-import copy
-import json
-import pickle
-from pathlib import Path
-import random
-from telemetry_f1_2021.packets import HEADER_FIELD_TO_PACKET_TYPE
-from telemetry_f1_2021.packets import PacketSessionData, PacketMotionData, PacketLapData, PacketEventData, PacketParticipantsData, PacketCarDamageData
-from telemetry_f1_2021.packets import PacketCarSetupData, PacketCarTelemetryData, PacketCarStatusData, PacketFinalClassificationData, PacketLobbyInfoData, PacketSessionHistoryData
-from telemetry_f1_2021.listener import TelemetryListener
-import time
 # using time module
 import argparse
+import asyncio
+import datetime
+import json
+
 import pika
-
-
+import websockets
 
 global _CURRENT_PACKET
 # Initialize message queue from where we're getting the data.
@@ -35,7 +25,7 @@ args = cli_parser.parse_args()
 
 # instead of having a random packet and randomizing, get from rabbitmq queue.
 def save_packet(collection_name):
-    print('{} | WS {} OK'.format(datetime.datetime.now(), collection_name))
+    print(f'{datetime.datetime.now()} | WS {collection_name} OK')
     channel.basic_qos(prefetch_count=1)
     # consume queue
     method, properties, body = channel.basic_get(queue=collection_name, auto_ack=True)
@@ -43,7 +33,7 @@ def save_packet(collection_name):
     try:
         _CURRENT_PACKET = body.decode()
         print(_CURRENT_PACKET)
-    except AttributeError as e:
+    except AttributeError:
         _CURRENT_PACKET = {}
     print(_CURRENT_PACKET)
     return json.dumps(_CURRENT_PACKET)

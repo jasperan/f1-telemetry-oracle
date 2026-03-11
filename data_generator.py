@@ -1,17 +1,13 @@
-import pyautogui
-import keyboard
-import pickle
-from pathlib import Path
-import time
 # directkeys.py
 # http://stackoverflow.com/questions/13564851/generate-keyboard-events
 # msdn.microsoft.com/en-us/library/dd375731
-
 import ctypes
-from ctypes import wintypes
+import pickle
 import time
-import pyautogui
+from ctypes import wintypes
+from pathlib import Path
 
+import keyboard
 
 user32 = ctypes.WinDLL('user32', use_last_error=True)
 
@@ -109,7 +105,7 @@ class KEYBDINPUT(ctypes.Structure):
                 ("dwExtraInfo", wintypes.ULONG_PTR))
 
     def __init__(self, *args, **kwds):
-        super(KEYBDINPUT, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         # some programs use the scan code even if KEYEVENTF_SCANCODE
         # isn't set in dwFflags, so attempt to map the correct code.
         if not self.dwFlags & KEYEVENTF_UNICODE:
@@ -165,18 +161,18 @@ Doing this online will negatively impact the gaming experience of other users.
 
 def save_keyboard_sequence(keyboard_sequence_name, list_events):
     root_dir = Path(__file__).parent
-    with open('{}/keyboard_sequences/{}.pickle'.format(root_dir, keyboard_sequence_name), 'wb') as file_object:
-        print('Saving packet: {}/keyboard_sequences/{}.pickle'.format(root_dir, keyboard_sequence_name))
+    with open(f'{root_dir}/keyboard_sequences/{keyboard_sequence_name}.pickle', 'wb') as file_object:
+        print(f'Saving packet: {root_dir}/keyboard_sequences/{keyboard_sequence_name}.pickle')
         pickle.dump(list_events, file_object, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 
 def load_keyboard_sequence(keyboard_sequence_name):
     root_dir = Path(__file__).parent
-    with open('{}/keyboard_sequences/{}.pickle'.format(root_dir, keyboard_sequence_name), 'rb') as file_object:
-        print('Reading packet: {}/keyboard_sequences/{}.pickle'.format(root_dir, keyboard_sequence_name))
+    with open(f'{root_dir}/keyboard_sequences/{keyboard_sequence_name}.pickle', 'rb') as file_object:
+        print(f'Reading packet: {root_dir}/keyboard_sequences/{keyboard_sequence_name}.pickle')
         list_events = pickle.load(file_object)
-        print('Read {} keyboard sequences'.format(len(list_events)))
+        print(f'Read {len(list_events)} keyboard sequences')
     return list_events
 
 
@@ -209,7 +205,7 @@ def get_sequence(file_name):
     for x in list_event:
         concrete_action = str(x).split('(')[1][:-1]
         print(concrete_action)
-        print('Delay: {}'.format(x.time - prev_time))
+        print(f'Delay: {x.time - prev_time}')
         str_actions.append(
             {
                 'action': concrete_action,
@@ -226,7 +222,7 @@ def parse_actions(actions_list):
     for x in actions_list:
         action_type = x['action'].split(' ')[-1] # get the last word, which is always either 'up' or 'down'
         key_stroke = x['action'].split(action_type)[0].rstrip() # get the key stroke to reproduce
-        print('ACTION TYPE: {} | KEY STROKE: {}'.format(action_type, key_stroke))
+        print(f'ACTION TYPE: {action_type} | KEY STROKE: {key_stroke}')
         parsed_actions.append(
             {
                 'action_type': action_type,
@@ -332,7 +328,7 @@ if __name__ == '__main__':
     
     actions = get_sequence('new_gp')
     parsed_actions = parse_actions(actions)
-    print('Parsed {} actions'.format(len(parsed_actions)))
+    print(f'Parsed {len(parsed_actions)} actions')
     
     '''
     PressKey(hex_keys['enter'])

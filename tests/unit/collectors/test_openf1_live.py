@@ -7,7 +7,6 @@ import respx
 from collectors.normalizer import NormalizedLap
 from collectors.openf1.collector import OpenF1Collector
 
-
 MOCK_DRIVERS_RESPONSE = [
     {
         "driver_number": 1,

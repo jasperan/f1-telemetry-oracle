@@ -1,4 +1,3 @@
-import oracledb
 import pytest
 import pytest_asyncio
 
@@ -37,13 +36,12 @@ async def test_connect_and_check_version(pool: OraclePool):
 @pytest.mark.asyncio(loop_scope="module")
 async def test_pool_returns_multiple_connections(pool: OraclePool):
     """Pool hands out independent connections."""
-    async with pool.connection() as conn1:
-        async with pool.connection() as conn2:
-            cur1 = conn1.cursor()
-            cur2 = conn2.cursor()
-            await cur1.execute("SELECT 1 FROM dual")
-            await cur2.execute("SELECT 2 FROM dual")
-            r1 = await cur1.fetchone()
-            r2 = await cur2.fetchone()
-            assert r1[0] == 1
-            assert r2[0] == 2
+    async with pool.connection() as conn1, pool.connection() as conn2:
+        cur1 = conn1.cursor()
+        cur2 = conn2.cursor()
+        await cur1.execute("SELECT 1 FROM dual")
+        await cur2.execute("SELECT 2 FROM dual")
+        r1 = await cur1.fetchone()
+        r2 = await cur2.fetchone()
+        assert r1[0] == 1
+        assert r2[0] == 2

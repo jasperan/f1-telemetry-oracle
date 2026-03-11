@@ -1,6 +1,5 @@
 import pickle
 from pathlib import Path
-from typing import Tuple, Dict
 
 from packets import Packet
 
@@ -11,7 +10,7 @@ class PacketLoader:
         if not path_to_packets:
             self.path_to_packets = Path(__file__).parent
 
-        self.packets: Dict[Tuple, Packet] = {}
+        self.packets: dict[tuple, Packet] = {}
 
     def fetch_packets(self):
         for packet in self.path_to_packets.glob(pattern='*.pickle'):

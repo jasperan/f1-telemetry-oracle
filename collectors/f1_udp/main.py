@@ -21,7 +21,6 @@ from pathlib import Path
 # Allow running from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from collectors.f1_udp.decoder import F1PacketHeader
 from collectors.f1_udp.listener import F1UDPListener
 from collectors.normalizer import NormalizedFrame, NormalizedLap
 

@@ -6,14 +6,15 @@ Uses FastAPI TestClient with a mocked OraclePool — no real Oracle DB required.
 from __future__ import annotations
 
 import contextlib
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.routers.compare import _align_telemetry, _interpolate_at, router as compare_router
+from api.routers.compare import _align_telemetry, _interpolate_at
+from api.routers.compare import router as compare_router
 
 # ============================================================
 # Sample data

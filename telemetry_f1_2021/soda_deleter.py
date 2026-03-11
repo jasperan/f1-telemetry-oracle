@@ -1,4 +1,3 @@
-import cx_Oracle
 from oracledb import OracleJSONDatabaseConnection
 
 dbhandler = OracleJSONDatabaseConnection()

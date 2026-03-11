@@ -8,6 +8,8 @@ Tests the complete round-trip:
 
 from __future__ import annotations
 
+import contextlib
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -153,19 +155,13 @@ class TestVectorSearch:
 class TestDBRoundTrip:
     """Verify data integrity through the full pipeline path."""
 
-    async def test_ingestion_roundtrip(
-        self, client: AsyncClient, pool: OraclePool
-    ):
+    async def test_ingestion_roundtrip(self, client: AsyncClient, pool: OraclePool):
         """Insert a new lap directly, then query it through the API."""
         async with pool.connection() as conn:
             cursor = conn.cursor()
             # Clean up potential prior run
-            try:
-                await cursor.execute(
-                    "DELETE FROM laps WHERE lap_id = 'lap_roundtrip'"
-                )
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                await cursor.execute("DELETE FROM laps WHERE lap_id = 'lap_roundtrip'")
 
             await cursor.execute("""
                 INSERT INTO laps (
@@ -190,9 +186,7 @@ class TestDBRoundTrip:
         assert lap["fuel_load_kg"] == pytest.approx(88.5, abs=0.01)
         assert lap["lap_time_ms"] == 84900
 
-    async def test_duality_view_json_roundtrip(
-        self, client: AsyncClient, pool: OraclePool
-    ):
+    async def test_duality_view_json_roundtrip(self, client: AsyncClient, pool: OraclePool):
         """Insert via JSON Duality View, query relationally through API.
         Validates the duality view round-trip core to the architecture.
         Skips gracefully if the duality view is not available."""

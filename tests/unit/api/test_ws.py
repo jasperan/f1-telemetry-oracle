@@ -5,14 +5,14 @@ Uses Starlette/FastAPI WebSocket TestClient.
 
 from __future__ import annotations
 
-import asyncio
 import json
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.routers.ws import WebSocketManager, router as ws_router
+from api.routers.ws import WebSocketManager
+from api.routers.ws import router as ws_router
 
 
 # ============================================================

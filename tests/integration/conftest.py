@@ -6,9 +6,9 @@ applies DDL, seeds fixture data, and provides an async OraclePool to tests.
 
 from __future__ import annotations
 
+import contextlib
 from pathlib import Path
 
-import pytest
 import pytest_asyncio
 
 from api.services.oracle import OraclePool
@@ -55,9 +55,6 @@ async def apply_ddl(pool: OraclePool):
             for stmt in sql_text.split(";"):
                 stmt = stmt.strip()
                 if stmt and not stmt.startswith("--"):
-                    try:
+                    with contextlib.suppress(Exception):
                         await cursor.execute(stmt)
-                    except Exception:
-                        # Rows may already exist from prior run; skip duplicates
-                        pass
             await conn.commit()

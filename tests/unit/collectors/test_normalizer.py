@@ -1,15 +1,12 @@
 """Test that all three data sources normalize to identical NormalizedLap structure."""
 
-import pytest
 
 from collectors.normalizer import (
-    NormalizedFrame,
     NormalizedLap,
     normalize_ergast_result,
     normalize_f1_udp_lap,
     normalize_openf1_lap,
 )
-
 
 # === Mock F1 24 UDP packet (decoded from binary) ===
 MOCK_F1_UDP_LAP = {

@@ -15,7 +15,7 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ async def websocket_chat(websocket: WebSocket):
                 logger.error("Chat WebSocket error: %s", exc, exc_info=True)
                 await websocket.send_json({
                     "type": "error",
-                    "message": f"Processing error: {str(exc)}",
+                    "message": f"Processing error: {exc!s}",
                 })
 
     except WebSocketDisconnect:
