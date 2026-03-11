@@ -39,11 +39,13 @@ def create_app() -> FastAPI:
     # Import and include routers
     from api.routers.circuits import router as circuits_router
     from api.routers.drivers import router as drivers_router
+    from api.routers.laps import router as laps_router
     from api.routers.sessions import router as sessions_router
 
     app.include_router(circuits_router, prefix="/api")
     app.include_router(sessions_router, prefix="/api")
     app.include_router(drivers_router, prefix="/api")
+    app.include_router(laps_router, prefix="/api")
 
     @app.get("/health")
     async def health() -> dict[str, str]:
