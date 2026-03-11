@@ -32,4 +32,4 @@ INSERT INTO telemetry_frames (frame_id, lap_id, timestamp_ms, distance_m, speed_
 VALUES ('frame_sim_1_0', 'lap_sim_1', 0, 0, 0.0, 100.0, 0.0, 0.0, 1, 8200, 0);
 
 INSERT INTO telemetry_frames (frame_id, lap_id, timestamp_ms, distance_m, speed_kph, throttle_pct, brake_pct, steering, gear, rpm, drs)
-VALUES ('frame_sim_1_1000', 'lap_sim_1', 1000, 78.1, 281.4, 95.0, 0.0, -2.1, 7, 10800, 1)
+VALUES ('frame_sim_1_1000', 'lap_sim_1', 1000, 78.1, 281.4, 95.0, 0.0, -2.1, 7, 10800, 1);

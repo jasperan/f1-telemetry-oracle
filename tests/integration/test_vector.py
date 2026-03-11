@@ -1,54 +1,19 @@
+"""Integration tests for vector similarity search.
+
+Uses the session-scoped pool and DDL from conftest.py.
+"""
+
 import uuid
 
 import numpy as np
 import pytest
-import pytest_asyncio
 
 from api.services.oracle import OraclePool
 
-
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def pool():
-    p = OraclePool(
-        dsn="localhost:1525/FREEPDB1",
-        user="f1app",
-        password="f1app",
-        min_connections=1,
-        max_connections=4,
-    )
-    await p.open()
-
-    schema_sql = open("api/db/schema.sql").read()
-    await p.execute_script(schema_sql)
-
-    yield p
-    await p.close()
-
-
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def seed_for_vector(pool: OraclePool):
-    """Create a circuit, driver, and session so we can insert laps."""
-    cid = f"vec-circuit-{uuid.uuid4().hex[:8]}"
-    did = f"vec-driver-{uuid.uuid4().hex[:8]}"
-    sid = f"vec-session-{uuid.uuid4().hex[:8]}"
-
-    async with pool.connection() as conn:
-        cursor = conn.cursor()
-        await cursor.execute(
-            "INSERT INTO circuits (circuit_id, circuit_name, country) VALUES (:1, :2, :3)",
-            [cid, "Vector Test Circuit", "Testland"],
-        )
-        await cursor.execute(
-            "INSERT INTO drivers (driver_id, code, first_name, last_name, is_sim_player) VALUES (:1, :2, :3, :4, :5)",
-            [did, "VEC", "Vector", "Tester", 0],
-        )
-        await cursor.execute(
-            "INSERT INTO sessions (session_id, circuit_id, session_type, source) VALUES (:1, :2, :3, :4)",
-            [sid, cid, "race", "sim"],
-        )
-        await conn.commit()
-
-    return {"circuit_id": cid, "driver_id": did, "session_id": sid}
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.asyncio(loop_scope="session"),
+]
 
 
 def _random_vector(dim: int = 384, seed: int = 42) -> list[float]:
@@ -73,18 +38,39 @@ def _orthogonal_vector(base: list[float], seed: int = 7) -> list[float]:
     rng = np.random.default_rng(seed)
     v = rng.standard_normal(len(base)).astype(np.float32)
     b = np.array(base, dtype=np.float32)
-    # Remove component along base
     v = v - (np.dot(v, b) / np.dot(b, b)) * b
     v = v / np.linalg.norm(v)
     return v.tolist()
 
 
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="module")
-async def test_insert_lap_with_vector(pool: OraclePool, seed_for_vector: dict):
+async def _create_seed_data(pool: OraclePool) -> dict:
+    """Create prerequisite circuit, driver, session for vector tests."""
+    cid = f"vec-circuit-{uuid.uuid4().hex[:8]}"
+    did = f"vec-driver-{uuid.uuid4().hex[:8]}"
+    sid = f"vec-session-{uuid.uuid4().hex[:8]}"
+
+    async with pool.connection() as conn:
+        cursor = conn.cursor()
+        await cursor.execute(
+            "INSERT INTO circuits (circuit_id, circuit_name, country) VALUES (:1, :2, :3)",
+            [cid, "Vector Test Circuit", "Testland"],
+        )
+        await cursor.execute(
+            "INSERT INTO drivers (driver_id, code, first_name, last_name, is_sim_player) VALUES (:1, :2, :3, :4, :5)",
+            [did, "VEC", "Vector", "Tester", 0],
+        )
+        await cursor.execute(
+            "INSERT INTO sessions (session_id, circuit_id, session_type, source) VALUES (:1, :2, :3, :4)",
+            [sid, cid, "race", "sim"],
+        )
+        await conn.commit()
+
+    return {"circuit_id": cid, "driver_id": did, "session_id": sid}
+
+
+async def test_insert_lap_with_vector(pool: OraclePool):
     """Insert a lap with a 384-dim embedding vector."""
-    vector_sql = open("api/db/vector.sql").read()
-    await pool.execute_script(vector_sql)
+    seed = await _create_seed_data(pool)
 
     lap_id = f"vec-lap-{uuid.uuid4().hex[:8]}"
     vec = _random_vector(384)
@@ -95,7 +81,7 @@ async def test_insert_lap_with_vector(pool: OraclePool, seed_for_vector: dict):
         await cursor.execute(
             """INSERT INTO laps (lap_id, session_id, driver_id, lap_number, lap_time_ms, lap_embedding)
                VALUES (:1, :2, :3, :4, :5, :6)""",
-            [lap_id, seed_for_vector["session_id"], seed_for_vector["driver_id"], 1, 85000, vec_str],
+            [lap_id, seed["session_id"], seed["driver_id"], 1, 85000, vec_str],
         )
         await conn.commit()
 
@@ -108,10 +94,10 @@ async def test_insert_lap_with_vector(pool: OraclePool, seed_for_vector: dict):
         assert row[0] == lap_id
 
 
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="module")
-async def test_vector_similarity_search(pool: OraclePool, seed_for_vector: dict):
-    """Insert 3 laps with different vectors, query for similar ones — nearest should rank first."""
+async def test_vector_similarity_search(pool: OraclePool):
+    """Insert 3 laps with different vectors, query for similar ones -- nearest should rank first."""
+    seed = await _create_seed_data(pool)
+
     base_vec = _random_vector(384, seed=100)
     similar_vec = _similar_vector(base_vec, noise=0.05, seed=101)
     distant_vec = _orthogonal_vector(base_vec, seed=102)
@@ -132,7 +118,7 @@ async def test_vector_similarity_search(pool: OraclePool, seed_for_vector: dict)
             await cursor.execute(
                 """INSERT INTO laps (lap_id, session_id, driver_id, lap_number, lap_time_ms, lap_embedding)
                    VALUES (:1, :2, :3, :4, :5, :6)""",
-                [lap_id, seed_for_vector["session_id"], seed_for_vector["driver_id"], lap_num, 86000, vec_str],
+                [lap_id, seed["session_id"], seed["driver_id"], lap_num, 86000, vec_str],
             )
         await conn.commit()
 
@@ -148,14 +134,14 @@ async def test_vector_similarity_search(pool: OraclePool, seed_for_vector: dict)
             ORDER BY dist ASC
             FETCH FIRST 3 ROWS ONLY
             """,
-            [query_vec_str, seed_for_vector["session_id"]],
+            [query_vec_str, seed["session_id"]],
         )
         rows = await cursor.fetchall()
         assert len(rows) >= 2, f"Expected >= 2 results, got {len(rows)}"
 
         # First result should be the base lap itself (distance ~0)
         assert rows[0][0] == lap_base
-        assert float(rows[0][1]) < 0.01  # near-zero cosine distance
+        assert float(rows[0][1]) < 0.01
 
         # Second should be similar, not the distant one
         assert rows[1][0] == lap_similar

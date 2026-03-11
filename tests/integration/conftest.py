@@ -6,7 +6,6 @@ applies DDL, seeds fixture data, and provides an async OraclePool to tests.
 
 from __future__ import annotations
 
-import contextlib
 from pathlib import Path
 
 import pytest_asyncio
@@ -40,11 +39,21 @@ async def pool():
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def apply_ddl(pool: OraclePool):
-    """Apply schema DDL and seed fixture data into the test container."""
+    """Apply schema DDL, optional DDL extensions, and seed fixture data."""
     # Apply the main schema
     schema_file = DDL_DIR / "schema.sql"
     if schema_file.exists():
         await pool.execute_script(schema_file.read_text())
+
+    # Apply optional DDL extensions (duality views, spatial, vector)
+    # These may fail in some Oracle configurations — don't block seeding
+    for extra in ("duality_views.sql", "spatial.sql", "vector.sql"):
+        extra_file = DDL_DIR / extra
+        if extra_file.exists():
+            try:
+                await pool.execute_script(extra_file.read_text())
+            except Exception:
+                pass  # Extension not supported in this container
 
     # Seed fixture data
     fixture_sql = FIXTURES_DIR / "seed_integration.sql"
@@ -52,9 +61,18 @@ async def apply_ddl(pool: OraclePool):
         sql_text = fixture_sql.read_text()
         async with pool.connection() as conn:
             cursor = conn.cursor()
-            for stmt in sql_text.split(";"):
-                stmt = stmt.strip()
-                if stmt and not stmt.startswith("--"):
-                    with contextlib.suppress(Exception):
+            for raw_stmt in sql_text.split(";"):
+                # Strip leading comment lines from each segment
+                lines = [l for l in raw_stmt.strip().splitlines()
+                         if l.strip() and not l.strip().startswith("--")]
+                stmt = "\n".join(lines).strip()
+                if stmt:
+                    try:
                         await cursor.execute(stmt)
+                    except Exception as exc:
+                        # ORA-00001 = unique constraint (duplicate row) — skip
+                        err = getattr(exc, "args", [None])[0]
+                        if hasattr(err, "code") and err.code == 1:
+                            continue
+                        raise
             await conn.commit()
