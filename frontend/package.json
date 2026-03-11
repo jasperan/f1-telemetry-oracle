@@ -1,0 +1,40 @@
+{
+  "name": "f1-telemetry-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "recharts": "^2.13.0",
+    "@react-three/fiber": "^8.17.0",
+    "@react-three/drei": "^9.114.0",
+    "three": "^0.170.0",
+    "zustand": "^5.0.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "reconnecting-websocket": "^4.4.0",
+    "react-markdown": "^9.0.0",
+    "clsx": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.170.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "@testing-library/react": "^16.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "jsdom": "^25.0.0"
+  }
+}

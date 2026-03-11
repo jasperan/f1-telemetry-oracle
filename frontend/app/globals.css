@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0a0a0a;
+    --color-surface: #111111;
+    --color-card: #1a1a1a;
+    --color-border: #2a2a2a;
+  }
+
+  body {
+    @apply bg-race-bg text-race-text antialiased;
+  }
+
+  /* Scrollbar styling for the racing aesthetic */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-race-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-race-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-race-muted;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-race-card border border-race-border rounded-lg overflow-hidden;
+  }
+
+  .panel-header {
+    @apply px-4 py-2 border-b border-race-border flex items-center justify-between;
+  }
+
+  .panel-title {
+    @apply text-data-sm font-mono uppercase tracking-wider text-race-muted;
+  }
+
+  .data-value {
+    @apply font-mono text-race-text tabular-nums;
+  }
+
+  .data-label {
+    @apply text-data-xs font-sans uppercase tracking-wider text-race-muted;
+  }
+
+  .accent-dot {
+    @apply w-2 h-2 rounded-full inline-block mr-2;
+  }
+
+  .gauge-ring {
+    @apply rounded-full border-2 flex items-center justify-center;
+  }
+}

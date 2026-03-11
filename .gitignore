@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -145,3 +145,21 @@ override.tf.json
 .terraform.lock.hcl
 .terraformrc
 terraform.rc
+
+# Design docs and plans
+docs/plans/
+task_plan.md
+findings.md
+progress.md
+
+# Playwright MCP
+.playwright-mcp/
+
+# Dogfood output
+dogfood-output/
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+.vercel
