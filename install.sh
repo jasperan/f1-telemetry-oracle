@@ -3,10 +3,13 @@ set -euo pipefail
 
 # ============================================================
 # f1-telemetry-oracle — One-Command Installer
-# Telemetry-F1-2021
+# F1 Telemetry Oracle -- AI Race Engineer
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/jasperan/f1-telemetry-oracle/feat/race-engineer-ai/install.sh | bash
+#
+# Override install location:
+#   PROJECT_DIR=/opt/myapp curl -fsSL ... | bash
 # ============================================================
 
 REPO_URL="https://github.com/jasperan/f1-telemetry-oracle.git"
@@ -33,7 +36,7 @@ print_banner() {
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${BOLD}  f1-telemetry-oracle${NC}"
-    echo -e "  Telemetry-F1-2021"
+    echo -e "  F1 Telemetry Oracle -- AI Race Engineer"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 }
@@ -61,7 +64,7 @@ check_prereqs() {
             ver=$("$cmd" -c 'import sys; v=sys.version_info; print(f"{v.major}.{v.minor}")' 2>/dev/null) || continue
             major=${ver%%.*}
             minor=${ver##*.}
-            if [ "$major" -ge 3 ] && [ "$minor" -ge 12 ]; then
+            if [ "$major" -gt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -ge 12 ]; }; then
                 PYTHON="$cmd"
                 break
             fi
@@ -87,14 +90,18 @@ check_prereqs() {
 
 install_deps() {
     cd "$INSTALL_DIR"
-    info "Creating virtual environment..."
-    $PYTHON -m venv .venv
+    if [ ! -d ".venv" ]; then
+        info "Creating virtual environment..."
+        $PYTHON -m venv .venv
+    else
+        info "Using existing virtual environment..."
+    fi
     # shellcheck disable=SC1091
     source .venv/bin/activate
 
     info "Installing dependencies..."
-    pip install --upgrade pip -q 2>/dev/null
-    pip install -e ".[dev]" -q 2>/dev/null || pip install -e . -q 2>/dev/null || {
+    pip install --upgrade pip -q
+    pip install -e ".[dev]" -q 2>/dev/null || pip install -e . -q || {
         if [ -f requirements.txt ]; then
             pip install -r requirements.txt -q
         else
