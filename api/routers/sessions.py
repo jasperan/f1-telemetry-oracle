@@ -31,6 +31,8 @@ async def list_sessions(
     source: str | None = Query(None, description="Filter by source: sim, openf1, ergast"),
     circuit_id: str | None = Query(None, description="Filter by circuit ID"),
     season: int | None = Query(None, description="Filter by season year"),
+    limit: int = Query(100, ge=1, le=1000, description="Max rows to return"),
+    offset: int = Query(0, ge=0, description="Number of rows to skip"),
 ) -> list[SessionResponse]:
     """Return sessions with optional filters."""
     pool = request.app.state.pool
@@ -59,6 +61,9 @@ async def list_sessions(
     if conditions:
         base_sql += " WHERE " + " AND ".join(conditions)
     base_sql += " ORDER BY created_at DESC"
+    base_sql += f" OFFSET :{idx} ROWS FETCH FIRST :{idx + 1} ROWS ONLY"
+    params.append(offset)
+    params.append(limit)
 
     async with pool.connection() as conn:
         cursor = conn.cursor()

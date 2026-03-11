@@ -42,6 +42,10 @@ _LAP_COLUMNS = (
     "is_valid, position, created_at"
 )
 
+_LAP_COLUMNS_ALIASED = ", ".join(
+    f"l.{col.strip()}" for col in _LAP_COLUMNS.split(",")
+)
+
 
 def _row_to_frame(row: tuple) -> TelemetryFrameResponse:
     """Map a DB row tuple to TelemetryFrameResponse."""
@@ -88,6 +92,8 @@ async def list_laps(
     session_id: str | None = Query(None, description="Filter by session ID"),
     driver_id: str | None = Query(None, description="Filter by driver ID"),
     source: str | None = Query(None, description="Filter by source (via session join)"),
+    limit: int = Query(100, ge=1, le=1000, description="Max rows to return"),
+    offset: int = Query(0, ge=0, description="Number of rows to skip"),
 ) -> list[LapResponse]:
     """Return laps with optional filters."""
     pool = request.app.state.pool
@@ -95,7 +101,7 @@ async def list_laps(
     if source is not None:
         # Need join with sessions table to filter by source
         base_sql = (
-            f"SELECT l.{_LAP_COLUMNS.replace(', ', ', l.').replace('l.lap_id', 'l.lap_id')} "
+            f"SELECT {_LAP_COLUMNS_ALIASED} "
             f"FROM laps l JOIN sessions s ON l.session_id = s.session_id"
         )
     else:
@@ -122,6 +128,9 @@ async def list_laps(
     if conditions:
         base_sql += " WHERE " + " AND ".join(conditions)
     base_sql += f" ORDER BY {prefix}lap_number"
+    base_sql += f" OFFSET :{idx} ROWS FETCH FIRST :{idx + 1} ROWS ONLY"
+    params.append(offset)
+    params.append(limit)
 
     async with pool.connection() as conn:
         cursor = conn.cursor()

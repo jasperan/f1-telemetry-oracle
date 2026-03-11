@@ -28,6 +28,8 @@ class OllamaClient:
     Always sends think: false to prevent Qwen3.5 from emitting
     internal reasoning tokens.
 
+    Uses a persistent ``httpx.AsyncClient`` for connection pooling.
+
     Args:
         base_url: Ollama server URL (default http://localhost:11434).
         timeout: Request timeout in seconds.
@@ -40,6 +42,7 @@ class OllamaClient:
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        self._client = httpx.AsyncClient(timeout=self._timeout)
 
     async def chat(
         self,
@@ -84,23 +87,21 @@ class OllamaClient:
 
     async def _blocking_chat(self, url: str, payload: dict) -> dict[str, Any]:
         """Non-streaming chat request."""
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            return response.json()
+        response = await self._client.post(url, json=payload)
+        response.raise_for_status()
+        return response.json()
 
     async def _stream_chat(self, url: str, payload: dict) -> AsyncIterator[dict[str, Any]]:
         """Streaming chat request -- yields chunks as they arrive."""
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            async with client.stream("POST", url, json=payload) as response:
-                response.raise_for_status()
-                async for line in response.aiter_lines():
-                    if line.strip():
-                        try:
-                            chunk = json.loads(line)
-                            yield chunk
-                        except json.JSONDecodeError:
-                            logger.warning("Failed to parse Ollama stream chunk: %s", line[:100])
+        async with self._client.stream("POST", url, json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if line.strip():
+                    try:
+                        chunk = json.loads(line)
+                        yield chunk
+                    except json.JSONDecodeError:
+                        logger.warning("Failed to parse Ollama stream chunk: %s", line[:100])
 
     async def health(self) -> bool:
         """Check if Ollama is reachable.
@@ -109,9 +110,8 @@ class OllamaClient:
             True if the Ollama API responds, False otherwise.
         """
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(f"{self._base_url}/api/tags")
-                return response.status_code == 200
+            response = await self._client.get(f"{self._base_url}/api/tags")
+            return response.status_code == 200
         except Exception:
             return False
 
@@ -121,8 +121,11 @@ class OllamaClient:
         Returns:
             List of model name strings.
         """
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{self._base_url}/api/tags")
-            response.raise_for_status()
-            data = response.json()
-            return [m["name"] for m in data.get("models", [])]
+        response = await self._client.get(f"{self._base_url}/api/tags")
+        response.raise_for_status()
+        data = response.json()
+        return [m["name"] for m in data.get("models", [])]
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client and release connections."""
+        await self._client.aclose()

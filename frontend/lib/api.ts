@@ -43,7 +43,7 @@ export async function fetchLaps(
 /** Fetch telemetry frames for a specific lap. */
 export async function fetchTelemetry(
   lapId: string
-): Promise<{ frames: Array<Record<string, number>> }> {
+): Promise<{ items: Array<Record<string, number>>; total: number; has_more: boolean }> {
   return apiFetch(`/api/laps/${lapId}/telemetry`);
 }
 
@@ -71,16 +71,16 @@ export async function sendChatMessage(
 export async function fetchSimVsReal(
   lapId: string
 ): Promise<Record<string, unknown>> {
-  return apiFetch(`/api/compare/sim-vs-real?lap=${lapId}`);
+  return apiFetch(`/api/compare/sim-vs-real?lap_id=${lapId}`);
 }
 
 /** Fetch tire life prediction. */
 export async function fetchTireLife(params: {
-  lap_id: string;
   tire_compound: string;
   tire_age_laps: number;
-  track_temp_c: number;
-  fuel_load_kg: number;
+  avg_speed_kph?: number;
+  track_temp_c?: number;
+  fuel_load_kg?: number;
 }): Promise<Record<string, unknown>> {
   return apiFetch("/api/predict/tire-life", {
     method: "POST",
@@ -89,12 +89,18 @@ export async function fetchTireLife(params: {
 }
 
 /** Fetch pit window prediction. */
-export async function fetchPitWindow(
-  lapId: string
-): Promise<Record<string, unknown>> {
+export async function fetchPitWindow(params: {
+  current_lap: number;
+  total_laps: number;
+  tire_compound: string;
+  tire_age_laps: number;
+  position?: number;
+  gap_ahead_ms?: number;
+  gap_behind_ms?: number;
+}): Promise<Record<string, unknown>> {
   return apiFetch("/api/predict/pit-window", {
     method: "POST",
-    body: JSON.stringify({ lap_id: lapId }),
+    body: JSON.stringify(params),
   });
 }
 

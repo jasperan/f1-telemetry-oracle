@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.services.ollama import OllamaClient
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
+        await ollama_client.close()
         await pool.close()
 
 
@@ -44,6 +46,18 @@ def create_app() -> FastAPI:
         description="AI-powered F1 race engineer — sim telemetry vs real F1 data, backed by Oracle 26ai Free",
         version="0.1.0",
         lifespan=lifespan,
+    )
+
+    # CORS — allow frontend dev server and wildcard for development
+    allowed_origins = ["http://localhost:3100", "http://127.0.0.1:3100"]
+    if settings.app_env == "development":
+        allowed_origins.append("*")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     # Import and include routers

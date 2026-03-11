@@ -111,7 +111,7 @@ class TestQueryUnderstanding:
 
     @pytest.mark.asyncio
     async def test_generates_sql_query(self, query_parser):
-        """Parsed query should produce SQL skeleton for retrieval."""
+        """Parsed query should produce parameterized SQL for retrieval."""
         query_parser._ollama.chat.return_value = {
             "message": {
                 "content": json.dumps({
@@ -125,8 +125,16 @@ class TestQueryUnderstanding:
         result = await query_parser.parse("Why am I slow in sector 2 at Silverstone?")
         sql_parts = result.to_sql_queries()
         assert len(sql_parts) > 0
+        # Each item is a (sql, bind_params) tuple
+        for sql, params in sql_parts:
+            assert isinstance(sql, str)
+            assert isinstance(params, dict)
         # Should reference the laps/telemetry tables
-        assert any("laps" in q.lower() or "telemetry" in q.lower() for q in sql_parts)
+        assert any("laps" in q.lower() or "telemetry" in q.lower() for q, _ in sql_parts)
+        # Bind params should contain circuit filter
+        assert any("circuit" in p for _, p in sql_parts)
+        # SQL must NOT contain raw user input (no f-string interpolation)
+        assert all("silverstone" not in q for q, _ in sql_parts)
 
     @pytest.mark.asyncio
     async def test_generates_vector_search_params(self, query_parser):
@@ -171,9 +179,14 @@ class TestQueryUnderstanding:
         }
 
         result = await query_parser.parse("Verstappen results history")
-        graph_q = result.to_graph_traversal()
-        assert graph_q is not None
-        assert "verstappen" in graph_q.lower()
+        graph_result = result.to_graph_traversal()
+        assert graph_result is not None
+        graph_q, graph_params = graph_result
+        assert isinstance(graph_q, str)
+        assert isinstance(graph_params, dict)
+        # Driver value should be in bind params, not in the SQL string
+        assert "verstappen" in graph_params.get("driver", "")
+        assert ":driver" in graph_q
 
 
 class TestContextAssembler:

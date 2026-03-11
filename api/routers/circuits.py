@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from api.models.schemas import CircuitResponse
 
@@ -24,7 +24,11 @@ def _row_to_circuit(row: tuple) -> CircuitResponse:
 
 
 @router.get("", response_model=list[CircuitResponse])
-async def list_circuits(request: Request) -> list[CircuitResponse]:
+async def list_circuits(
+    request: Request,
+    limit: int = Query(100, ge=1, le=1000, description="Max rows to return"),
+    offset: int = Query(0, ge=0, description="Number of rows to skip"),
+) -> list[CircuitResponse]:
     """Return all circuits."""
     pool = request.app.state.pool
     async with pool.connection() as conn:
@@ -32,7 +36,9 @@ async def list_circuits(request: Request) -> list[CircuitResponse]:
         await cursor.execute(
             "SELECT circuit_id, circuit_name, country, locality, "
             "track_length_m, lat, lng, created_at "
-            "FROM circuits ORDER BY circuit_name"
+            "FROM circuits ORDER BY circuit_name "
+            "OFFSET :1 ROWS FETCH FIRST :2 ROWS ONLY",
+            [offset, limit],
         )
         rows = await cursor.fetchall()
     return [_row_to_circuit(r) for r in rows]

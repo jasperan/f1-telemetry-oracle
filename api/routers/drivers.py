@@ -28,6 +28,8 @@ async def list_drivers(
     request: Request,
     nationality: str | None = Query(None, description="Filter by nationality"),
     is_sim_player: bool | None = Query(None, description="Filter by sim player flag"),
+    limit: int = Query(100, ge=1, le=1000, description="Max rows to return"),
+    offset: int = Query(0, ge=0, description="Number of rows to skip"),
 ) -> list[DriverResponse]:
     """Return drivers with optional filters."""
     pool = request.app.state.pool
@@ -52,6 +54,9 @@ async def list_drivers(
     if conditions:
         base_sql += " WHERE " + " AND ".join(conditions)
     base_sql += " ORDER BY last_name, first_name"
+    base_sql += f" OFFSET :{idx} ROWS FETCH FIRST :{idx + 1} ROWS ONLY"
+    params.append(offset)
+    params.append(limit)
 
     async with pool.connection() as conn:
         cursor = conn.cursor()

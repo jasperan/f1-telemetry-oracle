@@ -314,10 +314,12 @@ export default function StrategyAdvisor() {
     fetchPredictions();
   }, [fetchPredictions]);
 
-  const optimalStrategy = pitStrategies.reduce(
-    (best, s) => (s.probability > best.probability ? s : best),
-    pitStrategies[0]
-  );
+  const optimalStrategy = pitStrategies.length > 0
+    ? pitStrategies.reduce(
+        (best, s) => (s.probability > best.probability ? s : best),
+        pitStrategies[0]
+      )
+    : null;
 
   return (
     <div className="panel h-full flex flex-col">
