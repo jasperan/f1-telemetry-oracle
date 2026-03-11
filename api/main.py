@@ -8,12 +8,14 @@ from typing import AsyncIterator
 from fastapi import FastAPI
 
 from api.config import settings
+from api.services.ollama import OllamaClient
 from api.services.oracle import OraclePool
+from api.services.rag import ContextAssembler, QueryUnderstanding, ResponseGenerator
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Create and tear down the Oracle connection pool."""
+    """Create and tear down the Oracle connection pool and AI services."""
     pool = OraclePool(
         dsn=settings.oracle_dsn,
         user=settings.oracle_user,
@@ -21,6 +23,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     await pool.open()
     app.state.pool = pool
+
+    # Initialize Ollama + RAG services
+    ollama_client = OllamaClient(base_url=settings.ollama_base_url)
+    app.state.ollama_client = ollama_client
+    app.state.query_understanding = QueryUnderstanding(ollama_client=ollama_client)
+    app.state.context_assembler = ContextAssembler(oracle_pool=pool)
+    app.state.response_generator = ResponseGenerator(ollama_client=ollama_client)
+
     try:
         yield
     finally:
@@ -37,6 +47,7 @@ def create_app() -> FastAPI:
     )
 
     # Import and include routers
+    from api.routers.chat import router as chat_router
     from api.routers.circuits import router as circuits_router
     from api.routers.compare import router as compare_router
     from api.routers.drivers import router as drivers_router
@@ -51,6 +62,7 @@ def create_app() -> FastAPI:
     app.include_router(laps_router, prefix="/api")
     app.include_router(compare_router, prefix="/api")
     app.include_router(predict_router, prefix="/api")
+    app.include_router(chat_router, prefix="/api")
     app.include_router(ws_router)
 
     @app.get("/health")
