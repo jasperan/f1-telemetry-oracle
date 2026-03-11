@@ -23,9 +23,9 @@ export interface LapSummary {
   lap_id: string;
   lap_number: number;
   lap_time_ms: number;
-  sector1_time_ms: number;
-  sector2_time_ms: number;
-  sector3_time_ms: number;
+  sector1_ms: number;
+  sector2_ms: number;
+  sector3_ms: number;
   tire_compound: string;
   tire_age_laps: number;
   driver_code: string;

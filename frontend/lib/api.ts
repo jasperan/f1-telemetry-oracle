@@ -36,7 +36,7 @@ export async function fetchLaps(
   driverCode?: string
 ): Promise<LapSummary[]> {
   const params = new URLSearchParams({ session_id: sessionId });
-  if (driverCode) params.set("driver_code", driverCode);
+  if (driverCode) params.set("driver_id", driverCode);
   return apiFetch<LapSummary[]>(`/api/laps?${params}`);
 }
 

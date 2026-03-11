@@ -132,13 +132,12 @@ class ParsedQuery:
                 bind_params["season"] = season
             queries.append((
                 "SELECT d.first_name || ' ' || d.last_name AS driver_name, "
-                "d.code, t.team_name, "
+                "d.code, "
                 "l.lap_time_ms, l.position, s.started_at "
                 "FROM laps l "
                 "JOIN sessions s ON l.session_id = s.session_id "
                 "JOIN circuits c ON s.circuit_id = c.circuit_id "
                 "JOIN drivers d ON l.driver_id = d.driver_id "
-                "JOIN teams t ON l.team_id = t.team_id "
                 "WHERE LOWER(c.circuit_name) LIKE :circuit "
                 + season_clause
                 + "ORDER BY l.position ASC "
@@ -378,7 +377,7 @@ class ContextAssembler:
                 top_k = vs_params["top_k"]
                 # Vector search using Oracle AI Vector Search
                 vector_sql = (
-                    "SELECT l.lap_id, l.lap_time_ms, d.driver_code, "
+                    "SELECT l.lap_id, l.lap_time_ms, d.code, "
                     "VECTOR_DISTANCE(l.lap_embedding, "
                     "(SELECT lap_embedding FROM laps WHERE driver_id = "
                     "(SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
@@ -387,9 +386,9 @@ class ContextAssembler:
                     "JOIN drivers d ON l.driver_id = d.driver_id "
                     "WHERE l.lap_embedding IS NOT NULL "
                     "ORDER BY similarity "
-                    f"FETCH FIRST {top_k} ROWS ONLY"
+                    "FETCH FIRST :top_k ROWS ONLY"
                 )
-                await cursor.execute(vector_sql)
+                await cursor.execute(vector_sql, {"top_k": int(top_k)})
                 columns = [desc[0].lower() for desc in cursor.description or []]
                 rows = await cursor.fetchall()
                 for row in rows:
@@ -472,7 +471,7 @@ class ResponseGenerator:
             String chunks as they arrive from the LLM.
         """
         async for chunk in await self._ollama.chat(
-            model="qwen3.5:35b-a3b",
+            model=settings.ollama_model,
             messages=messages,
             options={"temperature": 0.3},
             think=False,

@@ -48,14 +48,12 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS — allow frontend dev server and wildcard for development
+    # CORS — allow frontend dev server
     allowed_origins = ["http://localhost:3100", "http://127.0.0.1:3100"]
-    if settings.app_env == "development":
-        allowed_origins.append("*")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
+        allow_origins=allowed_origins if settings.app_env != "development" else ["*"],
+        allow_credentials=settings.app_env != "development",
         allow_methods=["*"],
         allow_headers=["*"],
     )

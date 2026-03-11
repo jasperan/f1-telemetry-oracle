@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from api.models.schemas import CircuitResponse
@@ -60,3 +63,22 @@ async def get_circuit(circuit_id: str, request: Request) -> CircuitResponse:
     if row is None:
         raise HTTPException(status_code=404, detail=f"Circuit {circuit_id!r} not found")
     return _row_to_circuit(row)
+
+
+@router.get("/{circuit_id}/geometry")
+async def get_circuit_geometry(circuit_id: str, request: Request) -> dict[str, Any]:
+    """Return track geometry GeoJSON for a circuit."""
+    pool = request.app.state.pool
+    async with pool.connection() as conn:
+        cursor = conn.cursor()
+        await cursor.execute(
+            "SELECT track_geometry FROM circuits WHERE circuit_id = :1",
+            [circuit_id],
+        )
+        row = await cursor.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Circuit {circuit_id!r} not found")
+    if row[0] is None:
+        raise HTTPException(status_code=404, detail=f"No geometry for circuit {circuit_id!r}")
+    geom = row[0] if isinstance(row[0], dict) else json.loads(str(row[0]))
+    return {"circuit_id": circuit_id, "geometry": geom}
