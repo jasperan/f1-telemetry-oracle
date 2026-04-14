@@ -6,11 +6,11 @@ import { useStore, TirePrediction, PitStrategy } from "@/lib/store";
 
 /** Tire compound color lookup. */
 const COMPOUND_COLORS: Record<string, string> = {
-  SOFT: "#FF3B3B",
-  MEDIUM: "#FFD700",
-  HARD: "#FFFFFF",
-  INTERMEDIATE: "#00FF87",
-  WET: "#00A3FF",
+  SOFT: "#e05555",
+  MEDIUM: "#d4a845",
+  HARD: "#e8e8ed",
+  INTERMEDIATE: "#45d48a",
+  WET: "#4ca8e0",
 };
 
 /** Tire life gauge -- circular with cliff risk indicator. */
@@ -28,7 +28,7 @@ function TireLifeGauge({
   const cliffPct = prediction.cliff_risk * 100;
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2.5 animate-fade-in">
       <div className="relative w-32 h-32">
         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
           {/* Background ring */}
@@ -37,8 +37,9 @@ function TireLifeGauge({
             cy="50"
             r="45"
             fill="none"
-            stroke="#1a1a1a"
-            strokeWidth="8"
+            stroke="var(--color-border)"
+            strokeWidth="7"
+            opacity="0.4"
           />
           {/* Grip level */}
           <circle
@@ -46,12 +47,13 @@ function TireLifeGauge({
             cy="50"
             r="45"
             fill="none"
-            stroke={gripPct > 30 ? compoundColor : "#FF3B3B"}
-            strokeWidth="8"
+            stroke={gripPct > 30 ? compoundColor : "#e05555"}
+            strokeWidth="7"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={gripOffset}
             className="transition-all duration-500"
+            style={{ filter: `drop-shadow(0 0 4px ${gripPct > 30 ? compoundColor : '#e05555'}40)` }}
           />
           {/* Cliff risk indicator (inner ring) */}
           {cliffPct > 0 && (
@@ -60,20 +62,20 @@ function TireLifeGauge({
               cy="50"
               r="36"
               fill="none"
-              stroke="#FF3B3B"
-              strokeWidth="3"
+              stroke="#e05555"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeDasharray={2 * Math.PI * 36}
               strokeDashoffset={2 * Math.PI * 36 * (1 - cliffPct / 100)}
-              opacity={0.6}
+              opacity={0.5}
             />
           )}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono font-bold text-data-2xl text-race-text">
+          <span className="font-mono font-semibold text-data-2xl text-race-text">
             {Math.round(gripPct)}
           </span>
-          <span className="text-data-xs text-race-muted font-mono">GRIP %</span>
+          <span className="text-data-xs text-race-muted/60 font-mono">Grip %</span>
         </div>
       </div>
 
@@ -81,48 +83,48 @@ function TireLifeGauge({
       <div className="flex items-center gap-2">
         <div
           className="w-3 h-3 rounded-full"
-          style={{ backgroundColor: compoundColor }}
+          style={{ backgroundColor: compoundColor, boxShadow: `0 0 6px ${compoundColor}40` }}
         />
-        <span className="font-mono text-data-sm text-race-text uppercase">
+        <span className="font-mono text-data-sm text-race-text uppercase font-medium">
           {compound}
         </span>
       </div>
 
       {/* Laps remaining */}
       <div className="text-center">
-        <span className="font-mono text-data-xl text-race-text">
+        <span className="font-mono text-data-xl text-race-text font-semibold">
           {prediction.laps_remaining}
         </span>
-        <span className="text-data-xs text-race-muted ml-1">laps left</span>
+        <span className="text-data-xs text-race-muted/60 ml-1.5">laps left</span>
       </div>
 
       {/* Cliff risk bar */}
       {cliffPct > 0 && (
         <div className="w-full max-w-[160px]">
-          <div className="flex justify-between mb-1">
-            <span className="data-label">CLIFF RISK</span>
+          <div className="flex justify-between mb-1.5">
+            <span className="data-label">Cliff risk</span>
             <span
               className={clsx(
                 "font-mono text-data-xs",
                 cliffPct > 70
-                  ? "text-telemetry-brake"
+                  ? "text-accent-negative"
                   : cliffPct > 40
-                    ? "text-telemetry-steering"
-                    : "text-race-muted"
+                    ? "text-accent-warning"
+                    : "text-race-muted/60"
               )}
             >
               {Math.round(cliffPct)}%
             </span>
           </div>
-          <div className="h-1.5 bg-race-border rounded-full overflow-hidden">
+          <div className="h-1.5 bg-race-border/30 rounded-full overflow-hidden">
             <div
               className={clsx(
                 "h-full rounded-full transition-all duration-500",
                 cliffPct > 70
-                  ? "bg-telemetry-brake"
+                  ? "bg-accent-negative"
                   : cliffPct > 40
-                    ? "bg-telemetry-steering"
-                    : "bg-race-muted"
+                    ? "bg-accent-warning"
+                    : "bg-race-muted/40"
               )}
               style={{ width: `${cliffPct}%` }}
             />
@@ -148,24 +150,24 @@ function StrategyCard({
   return (
     <div
       className={clsx(
-        "rounded-lg border p-3 transition-colors",
+        "rounded-xl border p-3 transition-all duration-300",
         isOptimal
-          ? "border-telemetry-speed/50 bg-telemetry-speed/5"
-          : "border-race-border bg-race-surface"
+          ? "border-accent-primary/30 bg-accent-primary/5 shadow-glow"
+          : "border-race-border/40 bg-race-surface/60 hover:bg-race-surface/80 hover:border-race-border/60"
       )}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2">
           {isOptimal && (
-            <span className="text-data-xs font-mono text-telemetry-speed uppercase">
-              OPTIMAL
+            <span className="text-[0.6rem] font-mono text-accent-primary uppercase tracking-wider font-semibold">
+              Optimal
             </span>
           )}
-          <span className="font-mono text-data-sm text-race-text">
+          <span className="font-mono text-data-sm text-race-text font-medium">
             {strategy.strategy_name}
           </span>
         </div>
-        <span className="font-mono text-data-xs text-race-muted">
+        <span className="font-mono text-data-xs text-race-muted/60">
           {probPct}%
         </span>
       </div>
@@ -173,21 +175,21 @@ function StrategyCard({
       <div className="grid grid-cols-3 gap-2">
         {/* Pit lap */}
         <div className="text-center">
-          <span className="data-label block">PIT LAP</span>
-          <span className="font-mono text-data-md text-race-text">
+          <span className="data-label block mb-0.5">Pit lap</span>
+          <span className="font-mono text-data-md text-race-text font-medium">
             {strategy.pit_lap}
           </span>
         </div>
 
         {/* Next compound */}
         <div className="text-center">
-          <span className="data-label block">COMPOUND</span>
-          <div className="flex items-center justify-center gap-1 mt-0.5">
+          <span className="data-label block mb-0.5">Compound</span>
+          <div className="flex items-center justify-center gap-1.5 mt-0.5">
             <div
               className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: compoundColor }}
+              style={{ backgroundColor: compoundColor, boxShadow: `0 0 4px ${compoundColor}30` }}
             />
-            <span className="font-mono text-data-sm text-race-text uppercase">
+            <span className="font-mono text-data-sm text-race-text uppercase font-medium">
               {strategy.next_compound.charAt(0)}
             </span>
           </div>
@@ -195,8 +197,8 @@ function StrategyCard({
 
         {/* Time loss */}
         <div className="text-center">
-          <span className="data-label block">TIME LOSS</span>
-          <span className="font-mono text-data-md text-telemetry-brake">
+          <span className="data-label block mb-0.5">Time loss</span>
+          <span className="font-mono text-data-md text-accent-negative">
             +{strategy.expected_time_loss_s.toFixed(1)}s
           </span>
         </div>
@@ -208,15 +210,15 @@ function StrategyCard({
 /** Pit window recommendation banner. */
 function PitWindowBanner({ optimalLap }: { optimalLap: number }) {
   return (
-    <div className="bg-telemetry-speed/10 border border-telemetry-speed/30 rounded-lg px-3 py-2 flex items-center gap-3">
-      <div className="w-8 h-8 rounded-full border-2 border-telemetry-speed flex items-center justify-center">
-        <span className="font-mono text-data-sm text-telemetry-speed font-bold">
+    <div className="bg-accent-primary/8 border border-accent-primary/20 rounded-xl px-3.5 py-2.5 flex items-center gap-3 animate-fade-in">
+      <div className="w-8 h-8 rounded-lg border border-accent-primary/40 flex items-center justify-center bg-accent-primary/10">
+        <span className="font-mono text-data-sm text-accent-primary font-bold">
           P
         </span>
       </div>
       <div>
-        <span className="text-data-xs text-race-muted">RECOMMENDED PIT</span>
-        <div className="font-mono text-data-lg text-race-text">
+        <span className="text-data-xs text-race-muted/60 font-medium">Recommended pit</span>
+        <div className="font-mono text-data-lg text-race-text font-semibold">
           Lap {optimalLap}
         </div>
       </div>
@@ -322,10 +324,10 @@ export default function StrategyAdvisor() {
     : null;
 
   return (
-    <div className="panel h-full flex flex-col">
+    <article className="panel h-full flex flex-col">
       <div className="panel-header">
-        <span className="panel-title">Strategy Advisor</span>
-        <div className="flex gap-1">
+        <span className="panel-title">Strategy advisor</span>
+        <div className="flex gap-1.5">
           {Object.entries(COMPOUND_COLORS)
             .slice(0, 3)
             .map(([name, color]) => (
@@ -333,22 +335,23 @@ export default function StrategyAdvisor() {
                 key={name}
                 onClick={() => setCurrentCompound(name)}
                 className={clsx(
-                  "w-5 h-5 rounded-full border-2 transition-all",
+                  "w-5 h-5 rounded-full border-2 transition-all duration-200",
                   currentCompound === name
                     ? "border-race-text scale-110"
-                    : "border-transparent opacity-50 hover:opacity-100"
+                    : "border-transparent opacity-40 hover:opacity-80"
                 )}
                 style={{ backgroundColor: color }}
                 title={name}
+                aria-label={`Select ${name} compound`}
               />
             ))}
         </div>
       </div>
 
-      <div className="flex-1 p-3 flex flex-col gap-3 overflow-y-auto">
+      <div className="flex-1 p-3.5 flex flex-col gap-3 overflow-y-auto">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-telemetry-speed border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 spinner" />
           </div>
         ) : (
           <>
@@ -367,7 +370,7 @@ export default function StrategyAdvisor() {
 
             {/* Strategy options */}
             <div className="flex flex-col gap-2">
-              <span className="data-label">STRATEGY OPTIONS</span>
+              <span className="data-label">Strategy options</span>
               {pitStrategies.map((strategy, i) => (
                 <StrategyCard
                   key={i}
@@ -379,8 +382,8 @@ export default function StrategyAdvisor() {
 
             {/* Model info */}
             {tirePrediction && (
-              <div className="mt-auto pt-2 border-t border-race-border">
-                <span className="text-data-xs text-race-muted font-mono">
+              <div className="mt-auto pt-2.5 border-t border-race-border/30">
+                <span className="text-data-xs text-race-muted/40 font-mono">
                   Model: {tirePrediction.model_name}
                 </span>
               </div>
@@ -388,6 +391,6 @@ export default function StrategyAdvisor() {
           </>
         )}
       </div>
-    </div>
+    </article>
   );
 }

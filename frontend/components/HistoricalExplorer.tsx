@@ -35,8 +35,8 @@ function DataRow({
       <span className="data-label">{label}</span>
       <span
         className={clsx(
-          "font-mono text-data-sm tabular-nums",
-          highlight ? "text-telemetry-speed" : "text-race-text"
+          "font-mono text-data-sm",
+          highlight ? "text-accent-primary font-medium" : "text-race-text"
         )}
       >
         {value}
@@ -48,30 +48,30 @@ function DataRow({
 /** Result card component. */
 function ResultCard({ result }: { result: HistoricalResult }) {
   const typeColors: Record<string, string> = {
-    race_result: "border-team-ferrari/30",
-    driver_stat: "border-telemetry-speed/30",
-    circuit_info: "border-telemetry-throttle/30",
-    season_summary: "border-telemetry-steering/30",
+    race_result: "border-team-ferrari/20",
+    driver_stat: "border-accent-primary/20",
+    circuit_info: "border-accent-positive/20",
+    season_summary: "border-accent-warning/20",
   };
 
   const typeLabels: Record<string, string> = {
-    race_result: "RACE",
-    driver_stat: "DRIVER",
-    circuit_info: "CIRCUIT",
-    season_summary: "SEASON",
+    race_result: "Race",
+    driver_stat: "Driver",
+    circuit_info: "Circuit",
+    season_summary: "Season",
   };
 
   return (
     <div
       className={clsx(
-        "rounded-lg border bg-race-surface p-3 transition-colors hover:bg-race-card",
-        typeColors[result.type] ?? "border-race-border"
+        "rounded-xl border bg-race-surface/60 p-3 transition-all duration-200 hover:bg-race-card/80 hover:border-opacity-40",
+        typeColors[result.type] ?? "border-race-border/30"
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <span className="text-data-xs font-mono text-race-muted uppercase mr-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[0.6rem] font-mono text-race-muted/60 uppercase tracking-wider">
             {typeLabels[result.type] ?? result.type}
           </span>
           <span className="font-mono text-data-sm text-race-text font-medium">
@@ -81,7 +81,7 @@ function ResultCard({ result }: { result: HistoricalResult }) {
       </div>
 
       {result.subtitle && (
-        <p className="text-data-xs text-race-muted mb-2">{result.subtitle}</p>
+        <p className="text-data-xs text-race-muted/60 mb-2 leading-relaxed">{result.subtitle}</p>
       )}
 
       {/* Data rows */}
@@ -157,11 +157,11 @@ export default function HistoricalExplorer() {
   };
 
   return (
-    <div className="panel h-full flex flex-col">
+    <article className="panel h-full flex flex-col">
       <div className="panel-header">
-        <span className="panel-title">Historical Explorer</span>
+        <span className="panel-title">Historical explorer</span>
         {response && (
-          <span className="text-data-xs font-mono text-race-muted">
+          <span className="text-data-xs font-mono text-race-muted/50">
             {response.elapsed_ms}ms
           </span>
         )}
@@ -171,7 +171,7 @@ export default function HistoricalExplorer() {
         {/* Search bar */}
         <form
           onSubmit={onFormSubmit}
-          className="px-3 pt-3 pb-2 flex gap-2"
+          className="px-3.5 pt-3 pb-2 flex gap-2"
         >
           <div className="flex-1 relative">
             <input
@@ -179,11 +179,8 @@ export default function HistoricalExplorer() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search F1 history..."
-              className={clsx(
-                "w-full bg-race-surface border border-race-border rounded-lg pl-3 pr-8 py-2",
-                "text-data-sm font-sans text-race-text placeholder:text-race-muted",
-                "focus:outline-none focus:border-telemetry-speed/50"
-              )}
+              className="input-field pr-8"
+              aria-label="Historical search query"
             />
             {query && (
               <button
@@ -192,10 +189,11 @@ export default function HistoricalExplorer() {
                   setQuery("");
                   setResponse(null);
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-race-muted hover:text-race-text"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-race-muted/50 hover:text-race-text transition-colors duration-200"
+                aria-label="Clear search"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-3.5 h-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -213,27 +211,22 @@ export default function HistoricalExplorer() {
           <button
             type="submit"
             disabled={!query.trim() || loading}
-            className={clsx(
-              "px-3 py-2 rounded-lg font-mono text-data-xs transition-colors",
-              query.trim() && !loading
-                ? "bg-telemetry-speed/20 text-telemetry-speed border border-telemetry-speed/30 hover:bg-telemetry-speed/30"
-                : "bg-race-surface text-race-muted border border-race-border cursor-not-allowed"
-            )}
+            className="btn-primary text-data-xs"
           >
             {loading ? (
-              <div className="w-4 h-4 border-2 border-telemetry-speed border-t-transparent rounded-full animate-spin" />
+              <div className="w-3.5 h-3.5 spinner" />
             ) : (
-              "SEARCH"
+              "Search"
             )}
           </button>
         </form>
 
         {/* Results area */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
+        <div className="flex-1 overflow-y-auto px-3.5 pb-3">
           {/* Error state */}
           {error && (
-            <div className="text-center py-4">
-              <span className="text-data-sm text-telemetry-brake font-mono">
+            <div className="text-center py-4 animate-fade-in">
+              <span className="text-data-sm text-accent-negative font-mono">
                 {error}
               </span>
             </div>
@@ -241,9 +234,9 @@ export default function HistoricalExplorer() {
 
           {/* Empty state -- suggestions */}
           {!response && !loading && !error && (
-            <div className="py-4">
-              <p className="text-data-xs text-race-muted mb-3">
-                SUGGESTED QUERIES
+            <div className="py-4 animate-fade-in">
+              <p className="data-label mb-3">
+                Suggested queries
               </p>
               <div className="flex flex-wrap gap-2">
                 {SUGGESTIONS.map((suggestion) => (
@@ -253,9 +246,7 @@ export default function HistoricalExplorer() {
                       setQuery(suggestion);
                       search(suggestion);
                     }}
-                    className="px-2.5 py-1.5 rounded-lg border border-race-border text-data-xs
-                      font-mono text-race-muted hover:border-telemetry-speed/30
-                      hover:text-telemetry-speed transition-colors text-left"
+                    className="pill-btn text-left"
                   >
                     {suggestion}
                   </button>
@@ -266,10 +257,10 @@ export default function HistoricalExplorer() {
 
           {/* Loading state */}
           {loading && (
-            <div className="flex items-center justify-center py-8">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-6 h-6 border-2 border-telemetry-speed border-t-transparent rounded-full animate-spin" />
-                <span className="text-data-xs text-race-muted font-mono">
+            <div className="flex items-center justify-center py-8 animate-fade-in">
+              <div className="flex flex-col items-center gap-2.5">
+                <div className="w-5 h-5 spinner" />
+                <span className="text-data-xs text-race-muted/50 font-mono">
                   Searching historical data...
                 </span>
               </div>
@@ -278,20 +269,20 @@ export default function HistoricalExplorer() {
 
           {/* Results */}
           {response && !loading && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 animate-fade-in-up">
               {/* AI answer */}
-              <div className="bg-race-card border border-race-border rounded-lg p-3">
+              <div className="bg-race-card/70 border border-race-border/40 rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-5 h-5 rounded-full bg-telemetry-throttle/20 flex items-center justify-center">
-                    <span className="text-data-xs font-mono text-telemetry-throttle font-bold">
+                  <div className="w-5 h-5 rounded-md bg-accent-positive/12 flex items-center justify-center border border-accent-positive/15">
+                    <span className="text-[0.55rem] font-mono text-accent-positive font-bold">
                       AI
                     </span>
                   </div>
-                  <span className="text-data-xs text-race-muted font-mono uppercase">
+                  <span className="text-data-xs text-race-muted/50 font-mono uppercase tracking-wider">
                     {response.intent}
                   </span>
                 </div>
-                <p className="text-data-sm text-race-text leading-relaxed">
+                <p className="text-data-sm text-race-text/85 leading-relaxed">
                   {response.answer}
                 </p>
               </div>
@@ -300,8 +291,8 @@ export default function HistoricalExplorer() {
               {response.results.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <span className="data-label">
-                    {response.results.length} RESULT
-                    {response.results.length !== 1 ? "S" : ""}
+                    {response.results.length} result
+                    {response.results.length !== 1 ? "s" : ""}
                   </span>
                   {response.results.map((result, i) => (
                     <ResultCard key={i} result={result} />
@@ -312,7 +303,7 @@ export default function HistoricalExplorer() {
           )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 

@@ -20,19 +20,19 @@ function getHeatmapColor(
 ): string {
   const t = Math.min(1, Math.max(0, value / max));
   if (mode === "speed") {
-    // Blue (slow) -> Cyan -> Green -> Yellow -> Red (fast)
-    if (t < 0.25) return `hsl(240, 80%, ${30 + t * 160}%)`;
-    if (t < 0.5) return `hsl(${240 - (t - 0.25) * 480}, 80%, 50%)`;
-    if (t < 0.75) return `hsl(${120 - (t - 0.5) * 480}, 80%, 50%)`;
-    return `hsl(${0}, 80%, 50%)`;
+    // Blue (slow) -> Cyan -> Green -> Yellow -> Red (fast), desaturated
+    if (t < 0.25) return `hsl(220, 55%, ${28 + t * 140}%)`;
+    if (t < 0.5) return `hsl(${220 - (t - 0.25) * 400}, 55%, 48%)`;
+    if (t < 0.75) return `hsl(${120 - (t - 0.5) * 400}, 55%, 48%)`;
+    return `hsl(${10}, 60%, 48%)`;
   }
   if (mode === "brake") {
-    // Dark (no brake) -> Red (full brake)
-    return `hsl(0, ${t * 100}%, ${20 + t * 30}%)`;
+    // Dark (no brake) -> Red (full brake), desaturated
+    return `hsl(4, ${t * 65}%, ${20 + t * 28}%)`;
   }
-  // delta: green (faster) to red (slower)
-  if (value < 0) return `hsl(140, 80%, ${40 + Math.abs(value) * 20}%)`;
-  return `hsl(0, 80%, ${40 + value * 20}%)`;
+  // delta: green (faster) to red (slower), desaturated
+  if (value < 0) return `hsl(155, 55%, ${38 + Math.abs(value) * 15}%)`;
+  return `hsl(4, 55%, ${38 + value * 15}%)`;
 }
 
 /** The 3D track line with optional heatmap coloring. */
@@ -51,7 +51,7 @@ function TrackLine({
     return (
       <Line
         points={points}
-        color="#2a2a2a"
+        color="#3a3a44"
         lineWidth={3}
         dashed={false}
       />
@@ -95,17 +95,17 @@ function CarMarker({ position }: { position: THREE.Vector3 }) {
     <mesh ref={meshRef} position={position}>
       <sphereGeometry args={[0.15, 16, 16]} />
       <meshStandardMaterial
-        color="#00D4FF"
-        emissive="#00D4FF"
-        emissiveIntensity={0.8}
+        color="#4cb8d4"
+        emissive="#4cb8d4"
+        emissiveIntensity={0.7}
       />
       {/* Glow ring */}
       <mesh>
         <ringGeometry args={[0.2, 0.3, 32]} />
         <meshBasicMaterial
-          color="#00D4FF"
+          color="#4cb8d4"
           transparent
-          opacity={0.3}
+          opacity={0.25}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -127,12 +127,12 @@ function SectorMarkers({ points }: { points: THREE.Vector3[] }) {
         <group key={i} position={points[idx]}>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
             <planeGeometry args={[0.05, 0.8]} />
-            <meshBasicMaterial color="#FFD700" transparent opacity={0.6} />
+            <meshBasicMaterial color="#d4a845" transparent opacity={0.6} />
           </mesh>
           <Text
             position={[0, 0.5, 0]}
             fontSize={0.2}
-            color="#FFD700"
+            color="#d4a845"
             anchorX="center"
             anchorY="bottom"
           >
@@ -235,22 +235,20 @@ export default function TrackMap3D() {
   );
 
   return (
-    <div className="panel h-full flex flex-col">
+    <article className="panel h-full flex flex-col">
       <div className="panel-header">
-        <span className="panel-title">3D Track Map</span>
-        <div className="flex gap-1">
+        <span className="panel-title">3D track map</span>
+        <div className="flex gap-0.5">
           {(["speed", "brake", "delta", null] as const).map((mode) => (
             <button
               key={mode ?? "none"}
               onClick={() => setHeatmapOverlay(mode)}
               className={clsx(
-                "px-2 py-0.5 rounded text-data-xs font-mono uppercase transition-colors",
-                heatmapOverlay === mode
-                  ? "bg-race-border text-race-text"
-                  : "text-race-muted hover:text-race-text"
+                "chip-btn",
+                heatmapOverlay === mode && "active"
               )}
             >
-              {mode ?? "OFF"}
+              {mode ?? "off"}
             </button>
           ))}
         </div>
@@ -259,25 +257,25 @@ export default function TrackMap3D() {
       <div className="flex-1 min-h-0">
         {loading ? (
           <div className="h-full flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-telemetry-speed border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 spinner" />
           </div>
         ) : (
           <Canvas
             camera={{ position: [0, 15, 10], fov: 50 }}
-            style={{ background: "#0a0a0a" }}
+            style={{ background: "#0c0c0e" }}
           >
-            <ambientLight intensity={0.4} />
-            <directionalLight position={[10, 20, 10]} intensity={0.8} />
+            <ambientLight intensity={0.35} />
+            <directionalLight position={[10, 20, 10]} intensity={0.7} />
             <pointLight
               position={[0, 5, 0]}
-              intensity={0.3}
-              color="#00D4FF"
+              intensity={0.25}
+              color="#4cb8d4"
             />
 
             {/* Ground plane */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
               <planeGeometry args={[50, 50]} />
-              <meshStandardMaterial color="#0d0d0d" />
+              <meshStandardMaterial color="#0e0e11" />
             </mesh>
 
             {/* Track */}
@@ -308,6 +306,6 @@ export default function TrackMap3D() {
           </Canvas>
         )}
       </div>
-    </div>
+    </article>
   );
 }

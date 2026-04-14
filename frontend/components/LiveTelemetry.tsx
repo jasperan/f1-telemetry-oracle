@@ -44,7 +44,7 @@ function Gauge({
   };
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1.5">
       <div className={clsx("relative", sizeClasses[size])}>
         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
           <circle
@@ -52,8 +52,9 @@ function Gauge({
             cy="50"
             r="40"
             fill="none"
-            stroke="#2a2a2a"
-            strokeWidth="6"
+            stroke="var(--color-border)"
+            strokeWidth="5"
+            opacity="0.5"
           />
           <circle
             cx="50"
@@ -61,18 +62,19 @@ function Gauge({
             r="40"
             fill="none"
             stroke={color}
-            strokeWidth="6"
+            strokeWidth="5"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             className="transition-all duration-100"
+            style={{ filter: `drop-shadow(0 0 4px ${color}40)` }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={clsx("font-mono font-bold text-race-text", fontClasses[size])}>
+          <span className={clsx("font-mono font-semibold text-race-text", fontClasses[size])}>
             {Math.round(value)}
           </span>
-          <span className="text-data-xs text-race-muted font-mono">{unit}</span>
+          <span className="text-data-xs text-race-muted/60 font-mono">{unit}</span>
         </div>
       </div>
       <span className="data-label">{label}</span>
@@ -92,15 +94,19 @@ function PedalBar({
 }) {
   const pct = Math.min(100, Math.max(0, value * 100));
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center gap-2.5 w-full group">
       <span className="data-label w-14 text-right">{label}</span>
-      <div className="flex-1 h-3 bg-race-border rounded-full overflow-hidden">
+      <div className="flex-1 h-2.5 bg-race-border/40 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-75"
-          style={{ width: `${pct}%`, backgroundColor: color }}
+          style={{
+            width: `${pct}%`,
+            backgroundColor: color,
+            boxShadow: pct > 50 ? `0 0 8px ${color}30` : "none",
+          }}
         />
       </div>
-      <span className="font-mono text-data-sm text-race-text w-10 text-right tabular-nums">
+      <span className="font-mono text-data-sm text-race-text w-10 text-right">
         {Math.round(pct)}%
       </span>
     </div>
@@ -111,13 +117,13 @@ function PedalBar({
 function GearIndicator({ gear }: { gear: number }) {
   const gearLabel = gear === 0 ? "N" : gear === -1 ? "R" : `${gear}`;
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="w-14 h-14 rounded-lg border-2 border-race-border flex items-center justify-center bg-race-surface">
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="w-14 h-14 rounded-xl border border-race-border/60 flex items-center justify-center bg-race-surface/80">
         <span className="font-mono font-bold text-data-2xl text-telemetry-gear">
           {gearLabel}
         </span>
       </div>
-      <span className="data-label">GEAR</span>
+      <span className="data-label">Gear</span>
     </div>
   );
 }
@@ -125,25 +131,25 @@ function GearIndicator({ gear }: { gear: number }) {
 /** DRS indicator light. */
 function DrsIndicator({ active }: { active: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1.5">
       <div
         className={clsx(
-          "w-14 h-14 rounded-lg border-2 flex items-center justify-center",
+          "w-14 h-14 rounded-xl border flex items-center justify-center transition-all duration-300",
           active
-            ? "border-telemetry-drs bg-telemetry-drs/20 shadow-glow"
-            : "border-race-border bg-race-surface"
+            ? "border-telemetry-drs/60 bg-telemetry-drs/15 shadow-glow"
+            : "border-race-border/60 bg-race-surface/80"
         )}
       >
         <span
           className={clsx(
-            "font-mono font-bold text-data-md",
-            active ? "text-telemetry-drs" : "text-race-muted"
+            "font-mono font-bold text-data-md transition-colors duration-300",
+            active ? "text-telemetry-drs" : "text-race-muted/50"
           )}
         >
           DRS
         </span>
       </div>
-      <span className="data-label">{active ? "OPEN" : "OFF"}</span>
+      <span className="data-label">{active ? "Open" : "Off"}</span>
     </div>
   );
 }
@@ -163,14 +169,14 @@ function MiniTrace({
   max: number;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <span className="data-label">{label}</span>
-      <div className="h-12 w-full">
+      <div className="h-14 w-full rounded-lg overflow-hidden bg-race-surface/30">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                <stop offset="0%" stopColor={color} stopOpacity={0.2} />
                 <stop offset="100%" stopColor={color} stopOpacity={0.0} />
               </linearGradient>
             </defs>
@@ -224,21 +230,21 @@ export default function LiveTelemetry() {
   const frame = currentFrame;
 
   return (
-    <div className="panel h-full flex flex-col">
+    <article className="panel h-full flex flex-col">
       <div className="panel-header">
-        <span className="panel-title">Live Telemetry</span>
+        <span className="panel-title">Live telemetry</span>
         <div className="flex items-center gap-2">
           <div
             className={clsx(
-              "w-2 h-2 rounded-full",
+              "w-1.5 h-1.5 rounded-full transition-colors duration-300",
               wsState === "connected"
-                ? "bg-telemetry-throttle"
+                ? "bg-accent-positive"
                 : wsState === "connecting"
-                  ? "bg-telemetry-steering animate-pulse"
-                  : "bg-telemetry-brake"
+                  ? "bg-accent-warning animate-pulse"
+                  : "bg-accent-negative"
             )}
           />
-          <span className="text-data-xs font-mono text-race-muted uppercase">
+          <span className="text-data-xs font-mono text-race-muted/60 uppercase tracking-wider">
             {wsState}
           </span>
         </div>
@@ -250,9 +256,9 @@ export default function LiveTelemetry() {
           <Gauge
             value={frame?.speed_kph ?? 0}
             max={370}
-            label="SPEED"
+            label="Speed"
             unit="KPH"
-            color="#00D4FF"
+            color="#4cb8d4"
             size="lg"
           />
           <GearIndicator gear={frame?.gear ?? 0} />
@@ -262,39 +268,40 @@ export default function LiveTelemetry() {
             max={15000}
             label="RPM"
             unit="RPM"
-            color="#B388FF"
+            color="#9b7ee8"
             size="md"
           />
         </div>
 
         {/* Pedal bars */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           <PedalBar
             value={frame?.throttle ?? 0}
-            label="THROTTLE"
-            color="#00FF87"
+            label="Throttle"
+            color="#45d48a"
           />
           <PedalBar
             value={frame?.brake ?? 0}
-            label="BRAKE"
-            color="#FF3B3B"
+            label="Brake"
+            color="#e05555"
           />
         </div>
 
         {/* Steering */}
-        <div className="flex items-center gap-2">
-          <span className="data-label w-14 text-right">STEER</span>
-          <div className="flex-1 h-3 bg-race-border rounded-full relative overflow-hidden">
+        <div className="flex items-center gap-2.5">
+          <span className="data-label w-14 text-right">Steer</span>
+          <div className="flex-1 h-2.5 bg-race-border/40 rounded-full relative overflow-hidden">
             <div
               className="absolute h-full w-2 bg-telemetry-steering rounded-full transition-all duration-75"
               style={{
                 left: `${50 + (frame?.steering ?? 0) * 50}%`,
                 transform: "translateX(-50%)",
+                boxShadow: "0 0 6px #d4a84540",
               }}
             />
-            <div className="absolute h-full w-px bg-race-muted left-1/2" />
+            <div className="absolute h-full w-px bg-race-muted/20 left-1/2" />
           </div>
-          <span className="font-mono text-data-sm text-race-text w-14 text-right tabular-nums">
+          <span className="font-mono text-data-sm text-race-text w-14 text-right">
             {(frame?.steering ?? 0).toFixed(2)}
           </span>
         </div>
@@ -304,26 +311,26 @@ export default function LiveTelemetry() {
           <MiniTrace
             data={traceData}
             dataKey="speed"
-            color="#00D4FF"
-            label="SPEED"
+            color="#4cb8d4"
+            label="Speed"
             max={370}
           />
           <MiniTrace
             data={traceData}
             dataKey="throttle"
-            color="#00FF87"
-            label="THROTTLE"
+            color="#45d48a"
+            label="Throttle"
             max={100}
           />
           <MiniTrace
             data={traceData}
             dataKey="brake"
-            color="#FF3B3B"
-            label="BRAKE"
+            color="#e05555"
+            label="Brake"
             max={100}
           />
         </div>
       </div>
-    </div>
+    </article>
   );
 }

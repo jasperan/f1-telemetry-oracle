@@ -29,19 +29,19 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   return (
     <div
       className={clsx(
-        "flex gap-2 animate-fade-in",
+        "flex gap-2.5 animate-fade-in-up",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
       {/* Avatar */}
       <div
         className={clsx(
-          "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-data-xs font-mono font-bold",
+          "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-data-xs font-mono font-semibold",
           isUser
-            ? "bg-telemetry-speed/20 text-telemetry-speed"
+            ? "bg-accent-primary/12 text-accent-primary border border-accent-primary/15"
             : isSystem
-              ? "bg-race-border text-race-muted"
-              : "bg-telemetry-throttle/20 text-telemetry-throttle"
+              ? "bg-race-border/40 text-race-muted border border-race-border/30"
+              : "bg-accent-positive/12 text-accent-positive border border-accent-positive/15"
         )}
       >
         {isUser ? "DRV" : isSystem ? "SYS" : "ENG"}
@@ -50,12 +50,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       {/* Message content */}
       <div
         className={clsx(
-          "max-w-[85%] rounded-lg px-3 py-2",
+          "max-w-[85%] rounded-xl px-3.5 py-2.5",
           isUser
-            ? "bg-telemetry-speed/10 border border-telemetry-speed/20"
+            ? "bg-accent-primary/8 border border-accent-primary/15"
             : isSystem
-              ? "bg-race-surface border border-race-border"
-              : "bg-race-card border border-race-border"
+              ? "bg-race-surface/80 border border-race-border/40"
+              : "bg-race-card/80 border border-race-border/40"
         )}
       >
         {isUser ? (
@@ -65,22 +65,22 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             <ReactMarkdown
               components={{
                 p: ({ children }) => (
-                  <p className="text-data-sm text-race-text mb-2 last:mb-0">
+                  <p className="text-data-sm text-race-text/90 mb-2 last:mb-0 leading-relaxed">
                     {children}
                   </p>
                 ),
                 strong: ({ children }) => (
-                  <strong className="text-telemetry-speed font-mono font-semibold">
+                  <strong className="text-accent-primary font-mono font-semibold">
                     {children}
                   </strong>
                 ),
                 li: ({ children }) => (
-                  <li className="text-data-sm text-race-text ml-4 list-disc">
+                  <li className="text-data-sm text-race-text/90 ml-4 list-disc leading-relaxed">
                     {children}
                   </li>
                 ),
                 code: ({ children }) => (
-                  <code className="font-mono text-data-xs bg-race-surface px-1 py-0.5 rounded text-telemetry-gear">
+                  <code className="font-mono text-data-xs bg-race-surface/80 px-1.5 py-0.5 rounded-md text-accent-purple">
                     {children}
                   </code>
                 ),
@@ -93,12 +93,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
         {/* Metadata footer */}
         {message.intent && !isUser && (
-          <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-race-border">
-            <span className="text-data-xs font-mono text-race-muted">
+          <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-race-border/30">
+            <span className="text-data-xs font-mono text-race-muted/60">
               {message.intent}
             </span>
             {message.sources && (
-              <span className="text-data-xs font-mono text-race-muted">
+              <span className="text-data-xs font-mono text-race-muted/40">
                 {Object.entries(message.sources)
                   .filter(([, v]) => v > 0)
                   .map(([k, v]) => `${k}:${v}`)
@@ -106,7 +106,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
               </span>
             )}
             {message.elapsed_ms !== undefined && (
-              <span className="text-data-xs font-mono text-race-muted ml-auto">
+              <span className="text-data-xs font-mono text-race-muted/50 ml-auto">
                 {message.elapsed_ms}ms
               </span>
             )}
@@ -120,17 +120,17 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 /** Streaming indicator dots. */
 function StreamingIndicator() {
   return (
-    <div className="flex gap-2 items-start">
-      <div className="w-7 h-7 rounded-full bg-telemetry-throttle/20 flex items-center justify-center flex-shrink-0">
-        <span className="text-data-xs font-mono font-bold text-telemetry-throttle">
+    <div className="flex gap-2.5 items-start animate-fade-in">
+      <div className="w-7 h-7 rounded-lg bg-accent-positive/12 flex items-center justify-center flex-shrink-0 border border-accent-positive/15">
+        <span className="text-data-xs font-mono font-semibold text-accent-positive">
           ENG
         </span>
       </div>
-      <div className="bg-race-card border border-race-border rounded-lg px-3 py-2">
-        <div className="flex gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-telemetry-throttle animate-bounce [animation-delay:0ms]" />
-          <div className="w-1.5 h-1.5 rounded-full bg-telemetry-throttle animate-bounce [animation-delay:150ms]" />
-          <div className="w-1.5 h-1.5 rounded-full bg-telemetry-throttle animate-bounce [animation-delay:300ms]" />
+      <div className="bg-race-card/80 border border-race-border/40 rounded-xl px-3.5 py-3">
+        <div className="flex gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-accent-positive/60 animate-bounce [animation-delay:0ms]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-accent-positive/60 animate-bounce [animation-delay:150ms]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-accent-positive/60 animate-bounce [animation-delay:300ms]" />
         </div>
       </div>
     </div>
@@ -241,16 +241,16 @@ export default function RaceEngineerChat() {
   };
 
   return (
-    <div className="panel h-full flex flex-col">
+    <article className="panel h-full flex flex-col">
       <div className="panel-header">
-        <div className="flex items-center gap-2">
-          <span className="panel-title">Race Engineer</span>
+        <div className="flex items-center gap-2.5">
+          <span className="panel-title">Race engineer</span>
           <span
             className={clsx(
-              "text-data-xs font-mono px-1.5 py-0.5 rounded",
+              "text-[0.6rem] font-mono px-2 py-0.5 rounded-md tracking-wider font-medium transition-colors duration-300",
               wsState === "connected"
-                ? "bg-telemetry-throttle/20 text-telemetry-throttle"
-                : "bg-telemetry-brake/20 text-telemetry-brake"
+                ? "bg-accent-positive/10 text-accent-positive border border-accent-positive/15"
+                : "bg-accent-negative/10 text-accent-negative border border-accent-negative/15"
             )}
           >
             {wsState === "connected" ? "LIVE" : "OFFLINE"}
@@ -259,19 +259,19 @@ export default function RaceEngineerChat() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 min-h-0">
+      <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 min-h-0">
         {chatMessages.length === 0 && (
-          <div className="flex-1 flex items-center justify-center text-center">
+          <div className="flex-1 flex items-center justify-center text-center animate-fade-in">
             <div>
-              <div className="w-12 h-12 rounded-full bg-telemetry-throttle/10 flex items-center justify-center mx-auto mb-3">
-                <span className="font-mono text-data-lg text-telemetry-throttle">
+              <div className="w-12 h-12 rounded-xl bg-accent-positive/8 flex items-center justify-center mx-auto mb-3 border border-accent-positive/10">
+                <span className="font-mono text-data-lg text-accent-positive font-semibold">
                   ENG
                 </span>
               </div>
-              <p className="text-data-sm text-race-muted">
+              <p className="text-data-sm text-race-text-secondary font-medium">
                 Ask your race engineer anything
               </p>
-              <p className="text-data-xs text-race-muted mt-1">
+              <p className="text-data-xs text-race-muted/50 mt-1.5">
                 Telemetry, strategy, lap analysis, historical data
               </p>
             </div>
@@ -288,18 +288,13 @@ export default function RaceEngineerChat() {
       </div>
 
       {/* Quick-ask buttons */}
-      <div className="px-3 py-1.5 border-t border-race-border flex gap-1.5 overflow-x-auto">
+      <div className="px-3.5 py-2 border-t border-race-border/30 flex gap-1.5 overflow-x-auto">
         {QUICK_ASKS.map((qa) => (
           <button
             key={qa.label}
             onClick={() => handleSubmit(qa.question)}
             disabled={isChatStreaming}
-            className={clsx(
-              "px-2 py-1 rounded border text-data-xs font-mono whitespace-nowrap transition-colors",
-              isChatStreaming
-                ? "border-race-border text-race-muted cursor-not-allowed"
-                : "border-race-border text-race-muted hover:border-telemetry-speed/50 hover:text-telemetry-speed"
-            )}
+            className="pill-btn"
           >
             {qa.label}
           </button>
@@ -309,7 +304,7 @@ export default function RaceEngineerChat() {
       {/* Input area */}
       <form
         onSubmit={onFormSubmit}
-        className="px-3 py-2 border-t border-race-border flex gap-2"
+        className="px-3.5 py-2.5 border-t border-race-border/30 flex gap-2"
       >
         <input
           ref={inputRef}
@@ -318,26 +313,18 @@ export default function RaceEngineerChat() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask your race engineer..."
           disabled={isChatStreaming}
-          className={clsx(
-            "flex-1 bg-race-surface border border-race-border rounded-lg px-3 py-2",
-            "text-data-sm font-sans text-race-text placeholder:text-race-muted",
-            "focus:outline-none focus:border-telemetry-speed/50",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
-          )}
+          className="input-field flex-1"
+          aria-label="Chat message input"
         />
         <button
           type="submit"
           disabled={!input.trim() || isChatStreaming}
-          className={clsx(
-            "px-4 py-2 rounded-lg font-mono text-data-sm transition-colors",
-            input.trim() && !isChatStreaming
-              ? "bg-telemetry-speed/20 text-telemetry-speed border border-telemetry-speed/30 hover:bg-telemetry-speed/30"
-              : "bg-race-surface text-race-muted border border-race-border cursor-not-allowed"
-          )}
+          className="btn-primary"
+          aria-label="Send message"
         >
-          SEND
+          Send
         </button>
       </form>
-    </div>
+    </article>
   );
 }
