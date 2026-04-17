@@ -53,7 +53,7 @@ DATA SOURCES                              ORACLE DATABASE 23ai FREE
 ## Quickstart
 
 <!-- one-command-install -->
-> **One-command install** — clone, configure, and run in a single step:
+> **One-command install**: clone, configure, and run in a single step:
 >
 > ```bash
 > curl -fsSL https://raw.githubusercontent.com/jasperan/f1-telemetry-oracle/feat/race-engineer-ai/install.sh | bash

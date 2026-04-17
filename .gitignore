@@ -163,3 +163,14 @@ node_modules/
 .next/
 out/
 .vercel
+CLAUDE.md
+
+# Agent/skill directories (local-only)
+.agents/
+.claude/
+.crush/
+.openhands/
+.serena/
+
+# Generated content
+content/
