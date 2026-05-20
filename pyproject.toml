@@ -52,3 +52,5 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.uv]
