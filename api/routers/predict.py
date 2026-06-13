@@ -63,7 +63,6 @@ async def predict_tire_life(req: TireLifeRequest) -> TireLifeResponse:
     inference once the model is trained and deployed.
     """
     compound = req.tire_compound.upper()
-    base_lifespan = _COMPOUND_LIFESPAN.get(compound, 25)
     base_degradation = _COMPOUND_DEGRADATION.get(compound, 2.0)
 
     # Adjust for temperature
@@ -106,7 +105,6 @@ async def predict_pit_window(req: PitWindowRequest) -> PitWindowResponse:
     """
     compound = req.tire_compound.upper()
     base_lifespan = _COMPOUND_LIFESPAN.get(compound, 25)
-    base_degradation = _COMPOUND_DEGRADATION.get(compound, 2.0)
 
     remaining_laps = req.total_laps - req.current_lap
     tire_remaining = max(0, base_lifespan - req.tire_age_laps)

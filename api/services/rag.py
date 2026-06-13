@@ -294,6 +294,15 @@ class ContextAssembler:
     def __init__(self, oracle_pool) -> None:
         self._pool = oracle_pool
 
+    @staticmethod
+    async def _run(conn, sql: str, binds: dict | None = None) -> list[dict]:
+        """Execute a query on an existing connection and return rows as dicts."""
+        cursor = conn.cursor()
+        await cursor.execute(sql, binds or {})
+        columns = [desc[0].lower() for desc in cursor.description or []]
+        rows = await cursor.fetchall()
+        return [dict(zip(columns, row, strict=False)) for row in rows]
+
     async def assemble(
         self,
         parsed_query: ParsedQuery,
@@ -355,61 +364,43 @@ class ContextAssembler:
             "graph": [],
         }
 
-        # Execute SQL queries
-        sql_queries = parsed_query.to_sql_queries()
-        for query, bind_params in sql_queries:
-            try:
-                async with self._pool.connection() as conn:
-                    cursor = conn.cursor()
-                    await cursor.execute(query, bind_params)
-                    columns = [desc[0].lower() for desc in cursor.description or []]
-                    rows = await cursor.fetchall()
-                    for row in rows:
-                        results["sql"].append(dict(zip(columns, row)))
-            except Exception as exc:
-                logger.warning("SQL retrieval failed: %s -- %s", query[:80], exc)
+        async with self._pool.connection() as conn:
+            # Execute SQL queries
+            for query, bind_params in parsed_query.to_sql_queries():
+                try:
+                    results["sql"].extend(await self._run(conn, query, bind_params))
+                except Exception as exc:
+                    logger.warning("SQL retrieval failed: %s -- %s", query[:80], exc)
 
-        # Execute vector search
-        vs_params = parsed_query.to_vector_search_params()
-        try:
-            async with self._pool.connection() as conn:
-                cursor = conn.cursor()
-                top_k = vs_params["top_k"]
-                # Vector search using Oracle AI Vector Search
-                vector_sql = (
-                    "SELECT l.lap_id, l.lap_time_ms, d.code, "
-                    "VECTOR_DISTANCE(l.lap_embedding, "
-                    "(SELECT lap_embedding FROM laps WHERE driver_id = "
-                    "(SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
-                    "ORDER BY lap_id DESC FETCH FIRST 1 ROW ONLY), COSINE) AS similarity "
-                    "FROM laps l "
-                    "JOIN drivers d ON l.driver_id = d.driver_id "
-                    "WHERE l.lap_embedding IS NOT NULL "
-                    "ORDER BY similarity "
-                    "FETCH FIRST :top_k ROWS ONLY"
+            # Execute vector search using Oracle AI Vector Search
+            vs_params = parsed_query.to_vector_search_params()
+            vector_sql = (
+                "SELECT l.lap_id, l.lap_time_ms, d.code, "
+                "VECTOR_DISTANCE(l.lap_embedding, "
+                "(SELECT lap_embedding FROM laps WHERE driver_id = "
+                "(SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
+                "ORDER BY lap_id DESC FETCH FIRST 1 ROW ONLY), COSINE) AS similarity "
+                "FROM laps l "
+                "JOIN drivers d ON l.driver_id = d.driver_id "
+                "WHERE l.lap_embedding IS NOT NULL "
+                "ORDER BY similarity "
+                "FETCH FIRST :top_k ROWS ONLY"
+            )
+            try:
+                results["vector"] = await self._run(
+                    conn, vector_sql, {"top_k": int(vs_params["top_k"])}
                 )
-                await cursor.execute(vector_sql, {"top_k": int(top_k)})
-                columns = [desc[0].lower() for desc in cursor.description or []]
-                rows = await cursor.fetchall()
-                for row in rows:
-                    results["vector"].append(dict(zip(columns, row)))
-        except Exception as exc:
-            logger.warning("Vector search failed: %s", exc)
-
-        # Execute graph traversal
-        graph_result = parsed_query.to_graph_traversal()
-        if graph_result is not None:
-            graph_query, graph_bind = graph_result
-            try:
-                async with self._pool.connection() as conn:
-                    cursor = conn.cursor()
-                    await cursor.execute(graph_query, graph_bind)
-                    columns = [desc[0].lower() for desc in cursor.description or []]
-                    rows = await cursor.fetchall()
-                    for row in rows:
-                        results["graph"].append(dict(zip(columns, row)))
             except Exception as exc:
-                logger.warning("Graph traversal failed: %s", exc)
+                logger.warning("Vector search failed: %s", exc)
+
+            # Execute graph traversal
+            graph_result = parsed_query.to_graph_traversal()
+            if graph_result is not None:
+                graph_query, graph_bind = graph_result
+                try:
+                    results["graph"] = await self._run(conn, graph_query, graph_bind)
+                except Exception as exc:
+                    logger.warning("Graph traversal failed: %s", exc)
 
         return results
 

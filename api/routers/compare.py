@@ -7,6 +7,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from api.db.columns import FRAME_COLUMNS as _FRAME_COLUMNS
+from api.db.columns import LAP_COLUMNS as _LAP_COLUMNS
 from api.models.schemas import DeltaPoint, LapComparisonResponse, SimVsRealResponse
 
 router = APIRouter(prefix="/compare", tags=["compare"])
@@ -107,22 +109,6 @@ def _compute_sector_deltas(
         sector_deltas["sector2_ms"].append(float(row[5]) if row[5] is not None else 0.0)
         sector_deltas["sector3_ms"].append(float(row[6]) if row[6] is not None else 0.0)
     return sector_deltas
-
-
-_FRAME_COLUMNS = (
-    "frame_id, lap_id, timestamp_ms, distance_m, speed_kph, "
-    "throttle_pct, brake_pct, steering, gear, rpm, drs, "
-    "pos_x, pos_y, pos_z, g_lat, g_lon, "
-    "tire_temp_fl, tire_temp_fr, tire_temp_rl, tire_temp_rr, "
-    "brake_temp_fl, brake_temp_fr, brake_temp_rl, brake_temp_rr"
-)
-
-_LAP_COLUMNS = (
-    "lap_id, session_id, driver_id, lap_number, "
-    "sector1_ms, sector2_ms, sector3_ms, lap_time_ms, "
-    "tire_compound, tire_age_laps, fuel_load_kg, ers_deploy_pct, "
-    "is_valid, position, created_at"
-)
 
 
 async def _fetch_frames(pool: Any, lap_id: str) -> list[tuple]:

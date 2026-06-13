@@ -150,6 +150,54 @@ class OpenF1Collector:
             raise ValueError(f"Session {session_key} not found")
         return data[0]
 
+    @staticmethod
+    def _build_driver_map(drivers_data: list[dict[str, Any]] | None) -> dict[int, dict[str, Any]]:
+        """Index driver records by driver_number for fast enrichment lookups."""
+        driver_map: dict[int, dict[str, Any]] = {}
+        for d in drivers_data or []:
+            driver_map[d["driver_number"]] = d
+        return driver_map
+
+    @staticmethod
+    def _build_stint_map(stints_data: list[dict[str, Any]] | None) -> dict[int, list[dict[str, Any]]]:
+        """Group stints by driver_number, each list sorted by lap_start."""
+        stint_map: dict[int, list[dict[str, Any]]] = {}
+        for s in stints_data or []:
+            stint_map.setdefault(s["driver_number"], []).append(s)
+        for stints in stint_map.values():
+            stints.sort(key=lambda x: x.get("lap_start", 0))
+        return stint_map
+
+    @staticmethod
+    def _enrich_and_normalize(
+        lap: dict[str, Any],
+        driver_map: dict[int, dict[str, Any]],
+        stint_map: dict[int, list[dict[str, Any]]],
+        circuit_short_name: str,
+    ) -> NormalizedLap:
+        """Merge driver + stint/tire fields into a raw lap and normalize it."""
+        dn = lap.get("driver_number", 0)
+
+        # Merge driver info
+        driver = driver_map.get(dn, {})
+        lap["driver_code"] = driver.get("name_acronym")
+        lap["driver_first_name"] = driver.get("first_name")
+        lap["driver_last_name"] = driver.get("last_name")
+        lap["team_name"] = driver.get("team_name")
+
+        # Find matching stint for tire info
+        for stint in stint_map.get(dn, []):
+            lap_num = lap.get("lap_number", 0)
+            if stint.get("lap_start", 0) <= lap_num <= stint.get("lap_end", 9999):
+                lap["compound"] = stint.get("compound")
+                lap["tyre_age_at_start"] = stint.get("tyre_age_at_start", 0) + (
+                    lap_num - stint.get("lap_start", 0)
+                )
+                break
+
+        lap["circuit_short_name"] = circuit_short_name
+        return normalize_openf1_lap(lap)
+
     async def fetch_laps(
         self,
         session_key: int,
@@ -175,55 +223,16 @@ class OpenF1Collector:
         drivers_data = await self._get_json("/drivers", params={"session_key": str(session_key)})
         stints_data = await self._get_json("/stints", params={"session_key": str(session_key)})
 
-        # Build lookup maps
-        driver_map: dict[int, dict[str, Any]] = {}
-        for d in drivers_data or []:
-            driver_map[d["driver_number"]] = d
-
-        # Build stint lookup: driver_number -> list of stint dicts sorted by lap_start
-        stint_map: dict[int, list[dict[str, Any]]] = {}
-        for s in stints_data or []:
-            stint_map.setdefault(s["driver_number"], []).append(s)
-        for stints in stint_map.values():
-            stints.sort(key=lambda x: x.get("lap_start", 0))
+        driver_map = self._build_driver_map(drivers_data)
+        stint_map = self._build_stint_map(stints_data)
 
         # Deduplicate by (driver_number, lap_number, date_start)
-        seen: set[tuple[int, int, str]] = set()
-        unique_laps: list[dict[str, Any]] = []
-        for lap in raw_laps:
-            key = (
-                lap.get("driver_number", 0),
-                lap.get("lap_number", 0),
-                lap.get("date_start", ""),
-            )
-            if key not in seen:
-                seen.add(key)
-                unique_laps.append(lap)
+        unique_laps = self._dedup_laps(raw_laps, set())
 
-        # Enrich and normalize
-        normalized: list[NormalizedLap] = []
-        for lap in unique_laps:
-            dn = lap.get("driver_number", 0)
-
-            # Merge driver info
-            driver = driver_map.get(dn, {})
-            lap["driver_code"] = driver.get("name_acronym")
-            lap["driver_first_name"] = driver.get("first_name")
-            lap["driver_last_name"] = driver.get("last_name")
-            lap["team_name"] = driver.get("team_name")
-
-            # Find matching stint for tire info
-            for stint in stint_map.get(dn, []):
-                lap_num = lap.get("lap_number", 0)
-                if stint.get("lap_start", 0) <= lap_num <= stint.get("lap_end", 9999):
-                    lap["compound"] = stint.get("compound")
-                    lap["tyre_age_at_start"] = stint.get("tyre_age_at_start", 0) + (
-                        lap_num - stint.get("lap_start", 0)
-                    )
-                    break
-
-            lap["circuit_short_name"] = circuit_short_name
-            normalized.append(normalize_openf1_lap(lap))
+        normalized = [
+            self._enrich_and_normalize(lap, driver_map, stint_map, circuit_short_name)
+            for lap in unique_laps
+        ]
 
         logger.info(
             "Fetched %d laps for session %d (%d raw, %d after dedup)",
@@ -370,15 +379,8 @@ class OpenF1Collector:
         drivers_data = await self._get_json("/drivers", params={"session_key": str(session_key)})
         stints_data = await self._get_json("/stints", params={"session_key": str(session_key)})
 
-        driver_map: dict[int, dict[str, Any]] = {}
-        for d in drivers_data or []:
-            driver_map[d["driver_number"]] = d
-
-        stint_map: dict[int, list[dict[str, Any]]] = {}
-        for s in stints_data or []:
-            stint_map.setdefault(s["driver_number"], []).append(s)
-        for stints in stint_map.values():
-            stints.sort(key=lambda x: x.get("lap_start", 0))
+        driver_map = self._build_driver_map(drivers_data)
+        stint_map = self._build_stint_map(stints_data)
 
         seen: set[tuple[int, int, str]] = set()
         poll_count = 0
@@ -395,28 +397,10 @@ class OpenF1Collector:
             new_raw = self._dedup_laps(raw_laps, seen)
 
             if new_raw:
-                # Enrich and normalize
-                normalized: list[NormalizedLap] = []
-                for lap in new_raw:
-                    dn = lap.get("driver_number", 0)
-                    driver = driver_map.get(dn, {})
-                    lap["driver_code"] = driver.get("name_acronym")
-                    lap["driver_first_name"] = driver.get("first_name")
-                    lap["driver_last_name"] = driver.get("last_name")
-                    lap["team_name"] = driver.get("team_name")
-
-                    for stint in stint_map.get(dn, []):
-                        lap_num = lap.get("lap_number", 0)
-                        if stint.get("lap_start", 0) <= lap_num <= stint.get("lap_end", 9999):
-                            lap["compound"] = stint.get("compound")
-                            lap["tyre_age_at_start"] = stint.get("tyre_age_at_start", 0) + (
-                                lap_num - stint.get("lap_start", 0)
-                            )
-                            break
-
-                    lap["circuit_short_name"] = circuit_short_name
-                    normalized.append(normalize_openf1_lap(lap))
-
+                normalized = [
+                    self._enrich_and_normalize(lap, driver_map, stint_map, circuit_short_name)
+                    for lap in new_raw
+                ]
                 logger.info("Live poll %d: %d new laps", poll_count, len(normalized))
                 await callback(normalized)
             else:

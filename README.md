@@ -116,9 +116,9 @@ docker compose exec api python scripts/load_onnx_models.py
 ### Backend
 
 ```bash
-# Install Python dependencies
+# Install Python dependencies (uv manages the project venv from uv.lock)
 pip install uv
-uv pip install -e ".[dev]"
+uv sync --extra dev
 
 # Start Oracle 23ai Free
 docker compose up oracle-26ai -d
@@ -161,10 +161,10 @@ ollama serve   # or use the Ollama container in docker-compose
 
 ```bash
 # Unit tests (fast, no external deps)
-pytest tests/unit/ -v
+uv run pytest tests/unit/ -v
 
 # Integration tests (requires Oracle container on port 1525)
-pytest tests/integration/ -v -m integration
+uv run pytest tests/integration/ -v -m integration
 
 # Frontend build verification
 cd frontend && npm run build
@@ -220,7 +220,8 @@ f1-telemetry-oracle/
 │   │   └── rag.py              # Query understanding + context assembly
 │   ├── models/                 # Pydantic schemas
 │   │   └── schemas.py          # All request/response models
-│   └── db/                     # Database DDL
+│   └── db/                     # Database DDL + shared SQL fragments
+│       ├── columns.py          # Shared lap/frame column lists
 │       ├── schema.sql          # Core 10-table schema
 │       ├── vector.sql          # Vector search index setup
 │       ├── spatial.sql         # Spatial geometry + indexes

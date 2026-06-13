@@ -43,7 +43,7 @@ def create_app() -> FastAPI:
     """Build the FastAPI application with all routers mounted."""
     app = FastAPI(
         title="F1 Telemetry Oracle",
-        description="AI-powered F1 race engineer — sim telemetry vs real F1 data, backed by Oracle 26ai Free",
+        description="AI-powered F1 race engineer — sim telemetry vs real F1 data, backed by Oracle 23ai Free",
         version="0.1.0",
         lifespan=lifespan,
     )

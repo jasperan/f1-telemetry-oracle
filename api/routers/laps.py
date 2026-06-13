@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from api.db.columns import FRAME_COLUMNS as _FRAME_COLUMNS
+from api.db.columns import LAP_COLUMNS as _LAP_COLUMNS
 from api.models.schemas import (
     LapResponse,
     PaginatedResponse,
@@ -34,13 +36,6 @@ def _row_to_lap(row: tuple) -> LapResponse:
         created_at=row[14],
     )
 
-
-_LAP_COLUMNS = (
-    "lap_id, session_id, driver_id, lap_number, "
-    "sector1_ms, sector2_ms, sector3_ms, lap_time_ms, "
-    "tire_compound, tire_age_laps, fuel_load_kg, ers_deploy_pct, "
-    "is_valid, position, created_at"
-)
 
 _LAP_COLUMNS_ALIASED = ", ".join(
     f"l.{col.strip()}" for col in _LAP_COLUMNS.split(",")
@@ -77,15 +72,6 @@ def _row_to_frame(row: tuple) -> TelemetryFrameResponse:
     )
 
 
-_FRAME_COLUMNS = (
-    "frame_id, lap_id, timestamp_ms, distance_m, speed_kph, "
-    "throttle_pct, brake_pct, steering, gear, rpm, drs, "
-    "pos_x, pos_y, pos_z, g_lat, g_lon, "
-    "tire_temp_fl, tire_temp_fr, tire_temp_rl, tire_temp_rr, "
-    "brake_temp_fl, brake_temp_fr, brake_temp_rl, brake_temp_rr"
-)
-
-
 @router.get("", response_model=list[LapResponse])
 async def list_laps(
     request: Request,
@@ -98,39 +84,37 @@ async def list_laps(
     """Return laps with optional filters."""
     pool = request.app.state.pool
 
-    if source is not None:
-        # Need join with sessions table to filter by source
-        base_sql = (
-            f"SELECT {_LAP_COLUMNS_ALIASED} "
-            f"FROM laps l JOIN sessions s ON l.session_id = s.session_id"
-        )
-    else:
-        base_sql = f"SELECT {_LAP_COLUMNS} FROM laps"
+    # Always join sessions so every filter can use stable l./s. prefixes
+    # (laps.session_id is a FK to sessions, so the join is row-preserving).
+    base_sql = (
+        f"SELECT {_LAP_COLUMNS_ALIASED} "
+        f"FROM laps l JOIN sessions s ON l.session_id = s.session_id"
+    )
 
-    conditions: list[str] = []
-    params: list = []
-    idx = 1
-    prefix = "l." if source is not None else ""
-
+    # Collect (column, value) filter pairs, then assign positional bind
+    # indexes in order so the SQL and params list stay in lockstep.
+    filters: list[tuple[str, object]] = []
     if session_id is not None:
-        conditions.append(f"{prefix}session_id = :{idx}")
-        params.append(session_id)
-        idx += 1
+        filters.append(("l.session_id", session_id))
     if driver_id is not None:
-        conditions.append(f"{prefix}driver_id = :{idx}")
-        params.append(driver_id)
-        idx += 1
+        filters.append(("l.driver_id", driver_id))
     if source is not None:
-        conditions.append(f"s.source = :{idx}")
-        params.append(source)
-        idx += 1
+        filters.append(("s.source", source))
 
-    if conditions:
+    params: list = []
+    if filters:
+        conditions = []
+        for column, value in filters:
+            params.append(value)
+            conditions.append(f"{column} = :{len(params)}")
         base_sql += " WHERE " + " AND ".join(conditions)
-    base_sql += f" ORDER BY {prefix}lap_number"
-    base_sql += f" OFFSET :{idx} ROWS FETCH FIRST :{idx + 1} ROWS ONLY"
+
+    base_sql += " ORDER BY l.lap_number"
     params.append(offset)
+    offset_idx = len(params)
     params.append(limit)
+    limit_idx = len(params)
+    base_sql += f" OFFSET :{offset_idx} ROWS FETCH FIRST :{limit_idx} ROWS ONLY"
 
     async with pool.connection() as conn:
         cursor = conn.cursor()

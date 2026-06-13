@@ -1,7 +1,7 @@
 [project]
 name = "f1-telemetry-oracle"
 version = "0.1.0"
-description = "AI-powered F1 race engineer — sim telemetry vs real F1 data, backed by Oracle 26ai Free"
+description = "AI-powered F1 race engineer — sim telemetry vs real F1 data, backed by Oracle 23ai Free"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
