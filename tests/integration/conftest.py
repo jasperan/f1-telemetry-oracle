@@ -2,10 +2,16 @@
 
 Connects to the already-running Oracle container (from docker compose),
 applies DDL, seeds fixture data, and provides an async OraclePool to tests.
+
+The connection settings can be overridden via the ORACLE_TEST_DSN /
+ORACLE_TEST_USER / ORACLE_TEST_PASSWORD environment variables (e.g. to
+point at a dedicated CI container on another port).
 """
 
 from __future__ import annotations
 
+import contextlib
+import os
 from pathlib import Path
 
 import pytest_asyncio
@@ -17,9 +23,9 @@ DDL_DIR = Path(__file__).resolve().parent.parent.parent / "api" / "db"
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 
 # Oracle container running via docker compose on port 1525
-ORACLE_DSN = "localhost:1525/FREEPDB1"
-ORACLE_USER = "f1app"
-ORACLE_PASSWORD = "f1app"
+ORACLE_DSN = os.environ.get("ORACLE_TEST_DSN", "localhost:1525/FREEPDB1")
+ORACLE_USER = os.environ.get("ORACLE_TEST_USER", "f1app")
+ORACLE_PASSWORD = os.environ.get("ORACLE_TEST_PASSWORD", "f1app")
 
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
@@ -50,10 +56,8 @@ async def apply_ddl(pool: OraclePool):
     for extra in ("duality_views.sql", "spatial.sql", "vector.sql"):
         extra_file = DDL_DIR / extra
         if extra_file.exists():
-            try:
+            with contextlib.suppress(Exception):
                 await pool.execute_script(extra_file.read_text())
-            except Exception:
-                pass  # Extension not supported in this container
 
     # Seed fixture data
     fixture_sql = FIXTURES_DIR / "seed_integration.sql"
@@ -63,8 +67,11 @@ async def apply_ddl(pool: OraclePool):
             cursor = conn.cursor()
             for raw_stmt in sql_text.split(";"):
                 # Strip leading comment lines from each segment
-                lines = [l for l in raw_stmt.strip().splitlines()
-                         if l.strip() and not l.strip().startswith("--")]
+                lines = [
+                    line
+                    for line in raw_stmt.strip().splitlines()
+                    if line.strip() and not line.strip().startswith("--")
+                ]
                 stmt = "\n".join(lines).strip()
                 if stmt:
                     try:

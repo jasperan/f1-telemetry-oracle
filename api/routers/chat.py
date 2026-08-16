@@ -1,11 +1,18 @@
-"""Chat router -- AI Race Engineer REST + WebSocket endpoints.
+"""Chat router — AI Race Engineer REST + WebSocket endpoints.
 
 Provides:
-  POST /chat/message -- synchronous RAG-powered chat
+  POST /chat/message -- chat with a retrieval trace
   WS   /ws/chat      -- streaming chat via WebSocket
 
-Both endpoints use the QueryUnderstanding -> ContextAssembler ->
-ResponseGenerator pipeline backed by Ollama.
+Two pipelines:
+  * Agentic (default): the LLM plans its own retrieval by calling
+    database tools (see api/services/agent.py).
+  * Classic RAG: QueryUnderstanding -> ContextAssembler -> ResponseGenerator
+    (SQL + vector + graph + in-database document search).
+
+The agentic path is tried first and falls back to classic RAG whenever
+tool-calling is unavailable. Every response carries a ``trace`` object
+so the frontend can show exactly what the database did.
 """
 
 from __future__ import annotations
@@ -17,6 +24,9 @@ from typing import Any
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field, field_validator
+
+from api.config import settings
+from api.services.agent import AgenticError
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +48,20 @@ class ChatRequest(BaseModel):
         return v.strip()
 
 
+class RetrievalTrace(BaseModel):
+    """Transparency record of how an answer was produced."""
+
+    path: str = Field(..., description="'agent' (tool-calling) or 'rag' (classic pipeline)")
+    intent: str | None = Field(None, description="Detected intent (rag path)")
+    entities: dict[str, Any] = Field(default_factory=dict, description="Extracted entities")
+    tool_calls: list[str] = Field(default_factory=list, description="Tools called (agent path)")
+    iterations: int = Field(0, description="Agent loop iterations")
+    sources: dict[str, int] = Field(
+        default_factory=dict, description="Counts per data source (sql, vector, graph, docs, tools)"
+    )
+    stages_ms: dict[str, int] = Field(default_factory=dict, description="Per-stage latency in ms")
+
+
 class ChatResponse(BaseModel):
     """Response body for POST /chat/message."""
 
@@ -46,71 +70,116 @@ class ChatResponse(BaseModel):
     entities: dict[str, Any] = Field(default_factory=dict, description="Extracted entities")
     sources: dict[str, int] = Field(
         default_factory=dict,
-        description="Count of data sources used (sql, vector, graph)",
+        description="Count of data sources used (sql, vector, graph, docs)",
     )
     elapsed_ms: int = Field(..., description="Total processing time in milliseconds")
+    trace: RetrievalTrace = Field(default_factory=dict, description="Retrieval transparency trace")
 
 
+# ---------------------------------------------------------------------------
+# Pipelines
+# ---------------------------------------------------------------------------
+async def _classic_turn(app, question: str) -> tuple[str, RetrievalTrace]:
+    """Run the classic RAG pipeline; returns (response_text, trace)."""
+    stages: dict[str, int] = {}
+
+    start = time.monotonic()
+    parsed = await app.state.query_understanding.parse(question)
+    stages["parse_ms"] = int((time.monotonic() - start) * 1000)
+
+    start = time.monotonic()
+    retrieval = await app.state.context_assembler.execute_retrieval(parsed)
+    stages["retrieve_ms"] = int((time.monotonic() - start) * 1000)
+
+    start = time.monotonic()
+    context = await app.state.context_assembler.assemble(
+        parsed,
+        sql_results=retrieval.get("sql"),
+        vector_results=retrieval.get("vector"),
+        graph_results=retrieval.get("graph"),
+        docs_results=retrieval.get("docs"),
+    )
+    stages["assemble_ms"] = int((time.monotonic() - start) * 1000)
+
+    start = time.monotonic()
+    response_text = await app.state.response_generator.generate(context, stream=False)
+    stages["generate_ms"] = int((time.monotonic() - start) * 1000)
+
+    sources = {k: len(v) for k, v in retrieval.items() if isinstance(v, list)}
+
+    trace = RetrievalTrace(
+        path="rag",
+        intent=parsed.intent,
+        entities=parsed.entities,
+        sources=sources,
+        stages_ms=stages,
+    )
+    return response_text, trace
+
+
+async def _agent_turn(app, question: str) -> tuple[str, RetrievalTrace]:
+    """Run the agentic tool-calling pipeline; returns (response_text, trace)."""
+    start = time.monotonic()
+    result = await app.state.agent.run(question)
+    elapsed = int((time.monotonic() - start) * 1000)
+
+    trace = RetrievalTrace(
+        path="agent",
+        tool_calls=result.tool_calls,
+        iterations=result.iterations,
+        sources={"tools": len(result.tool_calls)},
+        stages_ms={"agent_ms": elapsed},
+    )
+    return result.response, trace
+
+
+async def _answer(app, question: str) -> tuple[str, RetrievalTrace]:
+    """Agentic-first with classic RAG fallback."""
+    agent = getattr(app.state, "agent", None)
+    if settings.agentic_chat and agent is not None:
+        try:
+            return await _agent_turn(app, question)
+        except AgenticError as exc:
+            logger.info("Agentic path unavailable (%s); falling back to RAG", exc)
+    return await _classic_turn(app, question)
+
+
+# ---------------------------------------------------------------------------
+# REST
+# ---------------------------------------------------------------------------
 @router.post("/chat/message", response_model=ChatResponse)
 async def chat_message(request: Request, body: ChatRequest):
-    """Process a chat message through the RAG pipeline.
-
-    Pipeline:
-    1. QueryUnderstanding parses the question into intent + entities
-    2. ContextAssembler retrieves data via SQL, vector search, graph
-    3. ResponseGenerator produces a grounded answer via Ollama
-    """
+    """Process a chat message through the AI race engineer pipeline."""
     start = time.monotonic()
-
-    query_understanding = request.app.state.query_understanding
-    context_assembler = request.app.state.context_assembler
-    response_generator = request.app.state.response_generator
-
-    # Step 1: Parse the question
-    parsed = await query_understanding.parse(body.message)
-    logger.info("Parsed intent=%s entities=%s", parsed.intent, parsed.entities)
-
-    # Step 2: Retrieve context
-    retrieval_results = await context_assembler.execute_retrieval(parsed)
-
-    # Step 3: Assemble context
-    context = await context_assembler.assemble(
-        parsed,
-        sql_results=retrieval_results.get("sql"),
-        vector_results=retrieval_results.get("vector"),
-        graph_results=retrieval_results.get("graph"),
-    )
-
-    # Step 4: Generate response
-    response_text = await response_generator.generate(context, stream=False)
-
+    response_text, trace = await _answer(request.app, body.message)
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
     return ChatResponse(
         response=response_text,
-        intent=parsed.intent,
-        entities=parsed.entities,
-        sources={
-            "sql": len(retrieval_results.get("sql", [])),
-            "vector": len(retrieval_results.get("vector", [])),
-            "graph": len(retrieval_results.get("graph", [])),
-        },
+        intent=trace.intent or "agent",
+        entities=trace.entities,
+        sources=trace.sources,
         elapsed_ms=elapsed_ms,
+        trace=trace,
     )
 
 
+# ---------------------------------------------------------------------------
+# WebSocket
+# ---------------------------------------------------------------------------
 @router.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
     """WebSocket endpoint for streaming chat responses.
 
-    Client sends: {"message": "...", "session_id": "..."}
+    Client sends: {"message": "..."}
     Server sends:
       {"type": "intent", "intent": "...", "entities": {...}}
-      {"type": "chunk", "content": "..."}  (repeated)
-      {"type": "complete", "elapsed_ms": N, "sources": {...}}
+      {"type": "chunk", "content": "..."}  (classic RAG streaming)
+      {"type": "response", "content": "..."}  (agentic, full response)
+      {"type": "complete", "elapsed_ms": N, "sources": {...}, "trace": {...}}
     """
     await websocket.accept()
-    app = websocket.app
+    app = websocket.scope["app"]
 
     try:
         while True:
@@ -129,46 +198,25 @@ async def websocket_chat(websocket: WebSocket):
             start = time.monotonic()
 
             try:
-                query_understanding = app.state.query_understanding
-                context_assembler = app.state.context_assembler
-                response_generator = app.state.response_generator
-
-                # Parse
-                parsed = await query_understanding.parse(question)
-                await websocket.send_json({
-                    "type": "intent",
-                    "intent": parsed.intent,
-                    "entities": parsed.entities,
-                })
-
-                # Retrieve + assemble
-                retrieval_results = await context_assembler.execute_retrieval(parsed)
-                context = await context_assembler.assemble(
-                    parsed,
-                    sql_results=retrieval_results.get("sql"),
-                    vector_results=retrieval_results.get("vector"),
-                    graph_results=retrieval_results.get("graph"),
-                )
-
-                # Generate -- try streaming, fall back to blocking
-                try:
-                    stream = await response_generator.generate(context, stream=True)
-                    async for chunk in stream:
-                        await websocket.send_json({"type": "chunk", "content": chunk})
-                except (TypeError, AttributeError):
-                    # Streaming not supported or mocked -- fall back
-                    response_text = await response_generator.generate(context, stream=False)
-                    await websocket.send_json({"type": "response", "content": response_text})
+                agent = getattr(app.state, "agent", None)
+                if settings.agentic_chat and agent is not None:
+                    try:
+                        response_text, trace = await _agent_turn(app, question)
+                        await websocket.send_json({"type": "response", "content": response_text})
+                    except AgenticError as exc:
+                        logger.info("Agentic path unavailable (%s); falling back to RAG", exc)
+                        await _classic_ws_stream(app, websocket, question)
+                        continue
+                else:
+                    await _classic_ws_stream(app, websocket, question)
+                    continue
 
                 elapsed_ms = int((time.monotonic() - start) * 1000)
                 await websocket.send_json({
                     "type": "complete",
                     "elapsed_ms": elapsed_ms,
-                    "sources": {
-                        "sql": len(retrieval_results.get("sql", [])),
-                        "vector": len(retrieval_results.get("vector", [])),
-                        "graph": len(retrieval_results.get("graph", [])),
-                    },
+                    "sources": trace.sources,
+                    "trace": trace.model_dump(),
                 })
 
             except Exception as exc:
@@ -182,3 +230,44 @@ async def websocket_chat(websocket: WebSocket):
         logger.info("Chat WebSocket client disconnected")
     except Exception:
         logger.info("Chat WebSocket connection closed")
+
+
+async def _classic_ws_stream(app, websocket: WebSocket, question: str) -> None:
+    """Stream a classic RAG answer, sending intent/chunk/complete events."""
+    parsed = await app.state.query_understanding.parse(question)
+    await websocket.send_json({
+        "type": "intent",
+        "intent": parsed.intent,
+        "entities": parsed.entities,
+    })
+
+    retrieval = await app.state.context_assembler.execute_retrieval(parsed)
+    context = await app.state.context_assembler.assemble(
+        parsed,
+        sql_results=retrieval.get("sql"),
+        vector_results=retrieval.get("vector"),
+        graph_results=retrieval.get("graph"),
+        docs_results=retrieval.get("docs"),
+    )
+
+    # Streaming generation with fallback to blocking
+    try:
+        stream = await app.state.response_generator.generate(context, stream=True)
+        async for chunk in stream:
+            await websocket.send_json({"type": "chunk", "content": chunk})
+    except (TypeError, AttributeError):
+        response_text = await app.state.response_generator.generate(context, stream=False)
+        await websocket.send_json({"type": "response", "content": response_text})
+
+    sources = {k: len(v) for k, v in retrieval.items() if isinstance(v, list)}
+    await websocket.send_json({
+        "type": "complete",
+        "elapsed_ms": 0,
+        "sources": sources,
+        "trace": {
+            "path": "rag",
+            "intent": parsed.intent,
+            "entities": parsed.entities,
+            "sources": sources,
+        },
+    })

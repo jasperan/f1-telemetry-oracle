@@ -90,12 +90,14 @@ async def test_seed_circuits(pool: OraclePool):
     """seed_circuits.py inserts at least 3 circuits with geometry."""
     import subprocess
     import sys
+    from pathlib import Path
 
+    repo_root = Path(__file__).resolve().parent.parent.parent
     result = subprocess.run(
         [sys.executable, "scripts/seed_circuits.py"],
         capture_output=True,
         text=True,
-        cwd="/home/ubuntu/git/personal/f1-telemetry-oracle",
+        cwd=str(repo_root),
     )
     if result.returncode != 0:
         pytest.skip(f"seed_circuits.py not available or failed: {result.stderr[:200]}")

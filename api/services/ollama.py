@@ -47,10 +47,11 @@ class OllamaClient:
     async def chat(
         self,
         model: str = DEFAULT_MODEL,
-        messages: list[dict[str, str]] | None = None,
+        messages: list[dict[str, Any]] | None = None,
         options: dict[str, Any] | None = None,
         think: bool = False,
         stream: bool = False,
+        tools: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any] | AsyncIterator[dict[str, Any]]:
         """Send a chat request to Ollama.
 
@@ -60,6 +61,9 @@ class OllamaClient:
             options: Ollama options (temperature, num_predict, etc.).
             think: Whether to enable thinking mode (default False).
             stream: Whether to stream the response.
+            tools: Optional list of tool definitions (OpenAI-style JSON schema).
+                When provided, the model may respond with ``message.tool_calls``
+                instead of plain content.
 
         Returns:
             If stream=False: complete response dict with message.content.
@@ -77,6 +81,8 @@ class OllamaClient:
 
         if options:
             payload["options"] = options
+        if tools:
+            payload["tools"] = tools
 
         url = f"{self._base_url}/api/chat"
 

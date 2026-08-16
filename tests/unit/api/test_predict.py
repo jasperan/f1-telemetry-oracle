@@ -1,6 +1,8 @@
-"""Unit tests for the predict router (tire life, pit window heuristics).
+"""Unit tests for the predict router (tire life, pit window, strategy sim).
 
-No DB required — these are pure heuristic endpoints.
+The test app gets a fake pool whose ONNX scoring always fails, forcing
+the documented heuristic fallback path — the same behavior a deployment
+without loaded models sees.
 """
 
 from __future__ import annotations
@@ -10,6 +12,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.routers.predict import router as predict_router
+from tests.unit.api.mock_pool import FakeCursor, FakePool
+
+
+class _RaisingCursor(FakeCursor):
+    async def execute(self, sql, binds=None):
+        raise RuntimeError("no models loaded")
 
 
 # ============================================================
@@ -19,6 +27,7 @@ from api.routers.predict import router as predict_router
 def app() -> FastAPI:
     test_app = FastAPI()
     test_app.include_router(predict_router, prefix="/api")
+    test_app.state.pool = FakePool(cursor=_RaisingCursor())
     return test_app
 
 

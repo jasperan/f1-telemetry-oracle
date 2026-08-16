@@ -174,3 +174,6 @@ CLAUDE.md
 
 # Generated content
 content/
+
+# Downloaded ONNX models + trained artifacts (large binaries)
+scripts/models/

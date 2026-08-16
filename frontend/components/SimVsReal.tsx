@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import clsx from "clsx";
 import { useStore } from "@/lib/store";
+import { fetchDrivingTwin } from "@/lib/api";
 
 interface ComparisonData {
   distance_points: Array<{
@@ -143,12 +144,21 @@ export default function SimVsReal() {
   const [loading, setLoading] = useState(false);
   const [activeChannel, setActiveChannel] = useState<Channel>("speed");
   const [error, setError] = useState<string | null>(null);
+  const [twin, setTwin] = useState<{
+    overall_twin?: { driver_code: string; mean_similarity: number } | null;
+    sectors?: Array<{
+      sector: number;
+      matches: Array<{ code: string; driver: string; similarity: number }>;
+    }>;
+    error?: string;
+  } | null>(null);
+  const [twinLoading, setTwinLoading] = useState(false);
 
   const fetchComparison = useCallback(async (lapId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/compare/sim-vs-real?lap=${lapId}`);
+      const res = await fetch(`/api/compare/sim-vs-real?lap_id=${lapId}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: ComparisonData = await res.json();
       setData(json);
@@ -160,12 +170,24 @@ export default function SimVsReal() {
     }
   }, []);
 
+  const fetchTwin = useCallback(async (lapId: string) => {
+    setTwinLoading(true);
+    try {
+      setTwin(await fetchDrivingTwin(lapId));
+    } catch {
+      setTwin(null);
+    } finally {
+      setTwinLoading(false);
+    }
+  }, []);
+
   // Auto-fetch when a sim lap is selected
   useEffect(() => {
     if (selectedLapIds.length > 0) {
       fetchComparison(selectedLapIds[0]);
+      fetchTwin(selectedLapIds[0]);
     }
-  }, [selectedLapIds, fetchComparison]);
+  }, [selectedLapIds, fetchComparison, fetchTwin]);
 
   const cfg = CHANNEL_CONFIG[activeChannel];
 
@@ -311,6 +333,57 @@ export default function SimVsReal() {
                   real_ms={s.real_time_ms}
                 />
               ))}
+            </div>
+
+            {/* Driving-style twin */}
+            <div className="rounded-xl border border-race-border/40 bg-race-surface/50 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="data-label">Driving twin</span>
+                {twinLoading && <div className="w-3.5 h-3.5 spinner" />}
+              </div>
+
+              {twin && twin.error && !twin.overall_twin && (
+                <p className="text-data-xs text-race-muted/50">{twin.error}</p>
+              )}
+
+              {twin && twin.overall_twin && (
+                <div className="animate-fade-in">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-data-md font-mono text-accent-purple font-semibold">
+                      {twin.overall_twin.driver_code}
+                    </span>
+                    <span className="text-data-xs text-race-muted/60">
+                      style match
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    {(twin.sectors ?? []).map((s) => (
+                      <div
+                        key={s.sector}
+                        className="flex-1 rounded-lg bg-race-card/60 border border-race-border/30 px-2 py-1.5 text-center"
+                      >
+                        <span className="data-label block mb-0.5">
+                          S{s.sector}
+                        </span>
+                        <span className="font-mono text-data-sm text-race-text">
+                          {s.matches[0]?.code ?? "—"}
+                        </span>
+                        {s.matches[0] && (
+                          <span className="block text-data-xs text-race-muted/50 font-mono">
+                            {s.matches[0].similarity.toFixed(3)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!twin && !twinLoading && (
+                <p className="text-data-xs text-race-muted/40">
+                  Match this lap against real drivers by telemetry signature.
+                </p>
+              )}
             </div>
           </>
         )}

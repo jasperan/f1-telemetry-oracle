@@ -9,7 +9,8 @@ BEGIN
        SELECT table_name FROM user_tables
        WHERE table_name IN (
            'PREDICTIONS','PIT_STOPS','RACE_EVENTS','CAR_SETUPS',
-           'TELEMETRY_FRAMES','LAPS','SESSIONS','TEAMS','DRIVERS','CIRCUITS'
+           'TELEMETRY_FRAMES','LAPS','SESSIONS','TEAMS','DRIVERS','CIRCUITS',
+           'RACE_DOCUMENTS','LAP_SECTOR_EMBEDDINGS'
        )
    ) LOOP
        EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS PURGE';
@@ -223,6 +224,32 @@ CREATE TABLE predictions (
 );
 
 -- ============================================================
+-- 11. RACE_DOCUMENTS -- text knowledge base for RAG
+-- Embedded in-database with VECTOR_EMBEDDING(ALL_MINILM_L12_V2)
+-- ============================================================
+CREATE TABLE race_documents (
+    doc_id            VARCHAR2(64)   NOT NULL,
+    doc_type          VARCHAR2(50)   NOT NULL,
+    title             VARCHAR2(300),
+    content           CLOB,
+    content_embedding VECTOR(384, FLOAT32),
+    created_at        TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+    CONSTRAINT pk_race_documents PRIMARY KEY (doc_id)
+);
+
+-- ============================================================
+-- 12. LAP_SECTOR_EMBEDDINGS -- per-sector driving-style vectors
+-- ============================================================
+CREATE TABLE lap_sector_embeddings (
+    lap_id            VARCHAR2(64)   NOT NULL,
+    sector_no         NUMBER(1)      NOT NULL,
+    sector_embedding  VECTOR(384, FLOAT32),
+    CONSTRAINT pk_lap_sectors PRIMARY KEY (lap_id, sector_no),
+    CONSTRAINT fk_lap_sectors_lap FOREIGN KEY (lap_id) REFERENCES laps(lap_id),
+    CONSTRAINT ck_lap_sectors_no CHECK (sector_no IN (1, 2, 3))
+);
+
+-- ============================================================
 -- Performance indexes
 -- ============================================================
 CREATE INDEX idx_laps_session ON laps(session_id);
@@ -234,3 +261,5 @@ CREATE INDEX idx_pits_session ON pit_stops(session_id);
 CREATE INDEX idx_sessions_circuit ON sessions(circuit_id);
 CREATE INDEX idx_sessions_source ON sessions(source);
 CREATE INDEX idx_predictions_lap ON predictions(lap_id);
+CREATE INDEX idx_race_docs_type ON race_documents(doc_type);
+CREATE INDEX idx_lap_sectors_lap ON lap_sector_embeddings(lap_id);

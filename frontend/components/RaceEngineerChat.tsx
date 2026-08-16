@@ -10,7 +10,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import clsx from "clsx";
 import { useWebSocket } from "@/lib/ws";
-import { useStore, ChatMessage } from "@/lib/store";
+import { useStore, ChatMessage, RetrievalTrace } from "@/lib/store";
 
 /** Quick-ask buttons for common race engineer questions. */
 const QUICK_ASKS = [
@@ -112,6 +112,43 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             )}
           </div>
         )}
+
+        {/* Retrieval trace (transparency panel) */}
+        {message.trace && !isUser && (
+          <div className="mt-2 pt-1.5 border-t border-race-border/30 space-y-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className={clsx(
+                  "text-[0.55rem] font-mono px-1.5 py-0.5 rounded tracking-wider font-semibold",
+                  message.trace.path === "agent"
+                    ? "bg-accent-purple/12 text-accent-purple border border-accent-purple/20"
+                    : "bg-accent-primary/12 text-accent-primary border border-accent-primary/20"
+                )}
+              >
+                {message.trace.path === "agent" ? "AGENT" : "RAG"}
+              </span>
+              {message.trace.tool_calls && message.trace.tool_calls.length > 0 && (
+                <span className="text-data-xs font-mono text-accent-purple/80">
+                  tools: {message.trace.tool_calls.join(" → ")}
+                </span>
+              )}
+              {message.trace.iterations !== undefined &&
+                message.trace.iterations > 0 && (
+                  <span className="text-data-xs font-mono text-race-muted/50">
+                    {message.trace.iterations} iter
+                  </span>
+                )}
+              {message.trace.stages_ms &&
+                Object.keys(message.trace.stages_ms).length > 0 && (
+                  <span className="text-data-xs font-mono text-race-muted/40 ml-auto">
+                    {Object.entries(message.trace.stages_ms)
+                      .map(([k, v]) => `${k.replace("_ms", "")}:${v}ms`)
+                      .join(" ")}
+                  </span>
+                )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -179,6 +216,7 @@ export default function RaceEngineerChat() {
             if (last.role === "assistant") {
               last.elapsed_ms = msg.elapsed_ms as number;
               last.sources = msg.sources as Record<string, number>;
+              last.trace = msg.trace as RetrievalTrace;
             }
           }
           break;

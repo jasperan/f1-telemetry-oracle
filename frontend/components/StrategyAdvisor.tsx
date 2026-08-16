@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
-import { useStore, TirePrediction, PitStrategy } from "@/lib/store";
+import { useStore, TirePrediction } from "@/lib/store";
+import { fetchPitWindow, fetchStrategySim, fetchTireLife } from "@/lib/api";
 
 /** Tire compound color lookup. */
 const COMPOUND_COLORS: Record<string, string> = {
@@ -13,7 +14,7 @@ const COMPOUND_COLORS: Record<string, string> = {
   WET: "#4ca8e0",
 };
 
-/** Tire life gauge -- circular with cliff risk indicator. */
+/** Tire life gauge -- circular with grip indicator. */
 function TireLifeGauge({
   prediction,
   compound,
@@ -135,80 +136,17 @@ function TireLifeGauge({
   );
 }
 
-/** Single strategy option card. */
-function StrategyCard({
-  strategy,
-  isOptimal,
-}: {
-  strategy: PitStrategy;
-  isOptimal: boolean;
-}) {
-  const compoundColor =
-    COMPOUND_COLORS[strategy.next_compound.toUpperCase()] ?? "#666";
-  const probPct = Math.round(strategy.probability * 100);
-
-  return (
-    <div
-      className={clsx(
-        "rounded-xl border p-3 transition-all duration-300",
-        isOptimal
-          ? "border-accent-primary/30 bg-accent-primary/5 shadow-glow"
-          : "border-race-border/40 bg-race-surface/60 hover:bg-race-surface/80 hover:border-race-border/60"
-      )}
-    >
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          {isOptimal && (
-            <span className="text-[0.6rem] font-mono text-accent-primary uppercase tracking-wider font-semibold">
-              Optimal
-            </span>
-          )}
-          <span className="font-mono text-data-sm text-race-text font-medium">
-            {strategy.strategy_name}
-          </span>
-        </div>
-        <span className="font-mono text-data-xs text-race-muted/60">
-          {probPct}%
-        </span>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        {/* Pit lap */}
-        <div className="text-center">
-          <span className="data-label block mb-0.5">Pit lap</span>
-          <span className="font-mono text-data-md text-race-text font-medium">
-            {strategy.pit_lap}
-          </span>
-        </div>
-
-        {/* Next compound */}
-        <div className="text-center">
-          <span className="data-label block mb-0.5">Compound</span>
-          <div className="flex items-center justify-center gap-1.5 mt-0.5">
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: compoundColor, boxShadow: `0 0 4px ${compoundColor}30` }}
-            />
-            <span className="font-mono text-data-sm text-race-text uppercase font-medium">
-              {strategy.next_compound.charAt(0)}
-            </span>
-          </div>
-        </div>
-
-        {/* Time loss */}
-        <div className="text-center">
-          <span className="data-label block mb-0.5">Time loss</span>
-          <span className="font-mono text-data-md text-accent-negative">
-            +{strategy.expected_time_loss_s.toFixed(1)}s
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** Pit window recommendation banner. */
-function PitWindowBanner({ optimalLap }: { optimalLap: number }) {
+function PitWindowBanner({
+  optimalLap,
+  compound,
+  modelUsed,
+}: {
+  optimalLap: number;
+  compound: string;
+  modelUsed?: string;
+}) {
+  const compoundColor = COMPOUND_COLORS[compound.toUpperCase()] ?? "#666";
   return (
     <div className="bg-accent-primary/8 border border-accent-primary/20 rounded-xl px-3.5 py-2.5 flex items-center gap-3 animate-fade-in">
       <div className="w-8 h-8 rounded-lg border border-accent-primary/40 flex items-center justify-center bg-accent-primary/10">
@@ -216,112 +154,188 @@ function PitWindowBanner({ optimalLap }: { optimalLap: number }) {
           P
         </span>
       </div>
-      <div>
-        <span className="text-data-xs text-race-muted/60 font-medium">Recommended pit</span>
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-data-xs text-race-muted/60 font-medium">Recommended pit</span>
+          {modelUsed && (
+            <span className="text-[0.55rem] font-mono px-1 py-0.5 rounded bg-accent-primary/10 text-accent-primary border border-accent-primary/15 uppercase tracking-wider">
+              {modelUsed === "onnx" ? "in-DB ONNX" : "heuristic"}
+            </span>
+          )}
+        </div>
         <div className="font-mono text-data-lg text-race-text font-semibold">
           Lap {optimalLap}
         </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: compoundColor }}
+        />
+        <span className="font-mono text-data-sm text-race-text uppercase">
+          {compound}
+        </span>
       </div>
     </div>
   );
 }
 
+/** Ranked strategy row from the Monte Carlo simulator. */
+function SimStrategyRow({
+  strategy,
+  rank,
+  winProbability,
+  medianTime,
+}: {
+  strategy: string[];
+  rank: number;
+  winProbability: number;
+  medianTime: number;
+}) {
+  return (
+    <div
+      className={clsx(
+        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 border",
+        rank === 1
+          ? "border-accent-primary/30 bg-accent-primary/5"
+          : "border-race-border/30 bg-race-surface/50"
+      )}
+    >
+      <span
+        className={clsx(
+          "w-6 h-6 rounded-md flex items-center justify-center font-mono text-data-xs font-bold flex-shrink-0",
+          rank === 1
+            ? "bg-accent-primary text-race-bg"
+            : "bg-race-border/40 text-race-muted"
+        )}
+      >
+        {rank}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          {strategy.map((compound, i) => (
+            <span key={i} className="flex items-center gap-1">
+              {i > 0 && <span className="text-race-muted/40">→</span>}
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: COMPOUND_COLORS[compound] ?? "#666" }}
+              />
+              <span className="font-mono text-data-xs text-race-text uppercase">
+                {compound.charAt(0)}
+              </span>
+            </span>
+          ))}
+        </div>
+        <span className="text-data-xs text-race-muted/50 font-mono">
+          median {medianTime.toFixed(1)}s
+        </span>
+      </div>
+      <span
+        className={clsx(
+          "font-mono text-data-sm font-semibold",
+          winProbability > 0.5 ? "text-accent-positive" : "text-race-muted"
+        )}
+      >
+        {(winProbability * 100).toFixed(0)}%
+      </span>
+    </div>
+  );
+}
+
 export default function StrategyAdvisor() {
-  const {
-    tirePrediction,
-    pitStrategies,
-    setTirePrediction,
-    setPitStrategies,
-    selectedLapIds,
-  } = useStore();
+  const { selectedLapIds } = useStore();
   const [loading, setLoading] = useState(false);
+  const [simLoading, setSimLoading] = useState(false);
   const [currentCompound, setCurrentCompound] = useState("SOFT");
+  const [tirePrediction, setTirePrediction] = useState<TirePrediction | null>(null);
+  const [pitWindow, setPitWindow] = useState<{
+    optimal_pit_lap: number;
+    recommended_compound: string;
+    model_used?: string;
+    strategy_description?: string;
+  } | null>(null);
+  const [simResult, setSimResult] = useState<{
+    strategies: Array<{
+      strategy: string[];
+      median_race_time_s: number;
+      win_probability: number;
+      rank: number;
+    }>;
+    n_sims: number;
+  } | null>(null);
 
   const fetchPredictions = useCallback(async () => {
-    if (!selectedLapIds.length) return;
     setLoading(true);
-
     try {
-      // Fetch tire life prediction
-      const tireRes = await fetch("/api/predict/tire-life", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lap_id: selectedLapIds[0],
-          tire_compound: currentCompound,
-          tire_age_laps: 12,
-          track_temp_c: 35.0,
-          fuel_load_kg: 80.0,
-        }),
+      const tireData = await fetchTireLife({
+        tire_compound: currentCompound,
+        tire_age_laps: 12,
+        track_temp_c: 35.0,
+        fuel_load_kg: 80.0,
+      });
+      setTirePrediction({
+        grip_percent: Number(tireData.current_grip_pct ?? 0),
+        laps_remaining: Number(tireData.predicted_remaining_laps ?? 0),
+        cliff_risk: Math.max(
+          0,
+          Math.min(1, (50 - Number(tireData.current_grip_pct ?? 0)) / 50)
+        ),
+        model_name: String(tireData.model_used ?? "heuristic"),
       });
 
-      if (tireRes.ok) {
-        const tireData: TirePrediction = await tireRes.json();
-        setTirePrediction(tireData);
-      }
-
-      // Fetch pit window prediction
-      const pitRes = await fetch("/api/predict/pit-window", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lap_id: selectedLapIds[0] }),
+      const pitData = await fetchPitWindow({
+        current_lap: 18,
+        total_laps: 53,
+        tire_compound: currentCompound,
+        tire_age_laps: 12,
+        position: 5,
+        gap_ahead_ms: 1500,
+        gap_behind_ms: 8000,
       });
-
-      if (pitRes.ok) {
-        const pitData = await pitRes.json();
-        setPitStrategies(pitData.strategies ?? []);
-      }
+      setPitWindow({
+        optimal_pit_lap: Number(pitData.optimal_pit_lap ?? 0),
+        recommended_compound: String(pitData.recommended_compound ?? "MEDIUM"),
+        model_used: String(pitData.model_used ?? "heuristic"),
+        strategy_description: String(pitData.strategy_description ?? ""),
+      });
     } catch {
-      // Use fallback data for display
+      // Fallback display data if the backend is unreachable
       setTirePrediction({
         grip_percent: 72.5,
         laps_remaining: 8,
         cliff_risk: 0.25,
-        model_name: "tire_degradation_heuristic",
+        model_name: "unavailable",
       });
-      setPitStrategies([
-        {
-          strategy_name: "Optimal 1-stop",
-          pit_lap: 22,
-          next_compound: "HARD",
-          expected_time_loss_s: 22.5,
-          probability: 0.65,
-        },
-        {
-          strategy_name: "Aggressive 1-stop",
-          pit_lap: 18,
-          next_compound: "MEDIUM",
-          expected_time_loss_s: 21.8,
-          probability: 0.25,
-        },
-        {
-          strategy_name: "2-stop",
-          pit_lap: 15,
-          next_compound: "SOFT",
-          expected_time_loss_s: 44.0,
-          probability: 0.1,
-        },
-      ]);
+      setPitWindow({
+        optimal_pit_lap: 22,
+        recommended_compound: "HARD",
+        model_used: "unavailable",
+      });
     } finally {
       setLoading(false);
     }
-  }, [
-    selectedLapIds,
-    currentCompound,
-    setTirePrediction,
-    setPitStrategies,
-  ]);
+  }, [currentCompound]);
+
+  const runSimulation = useCallback(async () => {
+    setSimLoading(true);
+    try {
+      const result = await fetchStrategySim({
+        total_laps: 53,
+        track_temp_c: 35.0,
+        fuel_start_kg: 110.0,
+        n_sims: 500,
+      });
+      setSimResult(result);
+    } catch {
+      setSimResult(null);
+    } finally {
+      setSimLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchPredictions();
   }, [fetchPredictions]);
-
-  const optimalStrategy = pitStrategies.length > 0
-    ? pitStrategies.reduce(
-        (best, s) => (s.probability > best.probability ? s : best),
-        pitStrategies[0]
-      )
-    : null;
 
   return (
     <article className="panel h-full flex flex-col">
@@ -364,27 +378,54 @@ export default function StrategyAdvisor() {
             )}
 
             {/* Pit window recommendation */}
-            {optimalStrategy && (
-              <PitWindowBanner optimalLap={optimalStrategy.pit_lap} />
+            {pitWindow && (
+              <PitWindowBanner
+                optimalLap={pitWindow.optimal_pit_lap}
+                compound={pitWindow.recommended_compound}
+                modelUsed={pitWindow.model_used}
+              />
             )}
 
-            {/* Strategy options */}
+            {/* Monte Carlo strategy simulator */}
             <div className="flex flex-col gap-2">
-              <span className="data-label">Strategy options</span>
-              {pitStrategies.map((strategy, i) => (
-                <StrategyCard
-                  key={i}
-                  strategy={strategy}
-                  isOptimal={strategy === optimalStrategy}
-                />
-              ))}
+              <div className="flex items-center justify-between">
+                <span className="data-label">Race simulator</span>
+                <button
+                  onClick={runSimulation}
+                  disabled={simLoading}
+                  className="pill-btn"
+                >
+                  {simLoading ? "Simulating…" : "Simulate 500 races"}
+                </button>
+              </div>
+
+              {simResult ? (
+                <div className="flex flex-col gap-1.5 animate-fade-in">
+                  <span className="text-data-xs text-race-muted/50 font-mono">
+                    Monte Carlo · {simResult.n_sims} sims per plan
+                  </span>
+                  {simResult.strategies.slice(0, 6).map((s) => (
+                    <SimStrategyRow
+                      key={s.rank}
+                      strategy={s.strategy}
+                      rank={s.rank}
+                      winProbability={s.win_probability}
+                      medianTime={s.median_race_time_s}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-data-xs text-race-muted/40">
+                  Simulate thousands of races to find the fastest pit strategy.
+                </p>
+              )}
             </div>
 
             {/* Model info */}
             {tirePrediction && (
-              <div className="mt-auto pt-2.5 border-t border-race-border/30">
+              <div className="mt-auto pt-2.5 border-t border-race-border/30 flex items-center justify-between">
                 <span className="text-data-xs text-race-muted/40 font-mono">
-                  Model: {tirePrediction.model_name}
+                  Tire model: {tirePrediction.model_name}
                 </span>
               </div>
             )}

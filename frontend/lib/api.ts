@@ -57,6 +57,14 @@ export async function sendChatMessage(
   entities: Record<string, unknown>;
   sources: Record<string, number>;
   elapsed_ms: number;
+  trace: {
+    path: string;
+    intent?: string;
+    tool_calls?: string[];
+    iterations?: number;
+    sources?: Record<string, number>;
+    stages_ms?: Record<string, number>;
+  };
 }> {
   return apiFetch("/api/chat/message", {
     method: "POST",
@@ -65,6 +73,58 @@ export async function sendChatMessage(
       include_telemetry: includeTelemetry,
     }),
   });
+}
+
+/** Run the Monte Carlo pit-strategy simulator. */
+export async function fetchStrategySim(params: {
+  total_laps: number;
+  track_temp_c?: number;
+  fuel_start_kg?: number;
+  n_sims?: number;
+  compounds?: string[];
+}): Promise<{
+  total_laps: number;
+  track_temp_c: number;
+  n_sims: number;
+  fastest_median_s: number;
+  strategies: Array<{
+    strategy: string[];
+    median_race_time_s: number;
+    p10_race_time_s: number;
+    p90_race_time_s: number;
+    win_probability: number;
+    rank: number;
+  }>;
+}> {
+  return apiFetch("/api/predict/strategy-sim", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+/** Find the real driver whose driving style most resembles a sim lap. */
+export async function fetchDrivingTwin(
+  lapId: string
+): Promise<{
+  lap_id: string;
+  error?: string;
+  overall_twin?: {
+    driver_code: string;
+    mean_similarity: number;
+    best_sector_similarity: number;
+  } | null;
+  sectors?: Array<{
+    sector: number;
+    matches: Array<{
+      lap_id: string;
+      code: string;
+      driver: string;
+      lap_time_ms: number | null;
+      similarity: number;
+    }>;
+  }>;
+}> {
+  return apiFetch(`/api/compare/driving-twin?lap_id=${lapId}&top_k=3`);
 }
 
 /** Fetch sim vs real comparison data for a lap. */

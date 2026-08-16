@@ -20,6 +20,10 @@ from api.config import settings
 
 logger = logging.getLogger(__name__)
 
+# In-database embedding model used for text RAG over race_documents
+DOC_EMBEDDING_MODEL = "ALL_MINILM_L12_V2"
+DOC_SEARCH_LIMIT = 5
+
 # Supported intents the query parser can extract
 SUPPORTED_INTENTS = [
     "sector_analysis",    # Why am I slow in sector X?
@@ -41,10 +45,13 @@ Extract:
 IMPORTANT: Return ONLY valid JSON, no markdown, no explanation.
 
 Examples:
-- "Why am I slow in sector 2 at Silverstone?" -> {{"intent": "sector_analysis", "entities": {{"sector": 2, "circuit": "silverstone"}}, "filters": {{}}}}
-- "Compare my lap to Verstappen" -> {{"intent": "comparison", "entities": {{"driver": "verstappen", "comparison_type": "lap"}}, "filters": {{}}}}
+- "Why am I slow in sector 2 at Silverstone?" -> {{"intent": "sector_analysis", "entities": \
+{{"sector": 2, "circuit": "silverstone"}}, "filters": {{}}}}
+- "Compare my lap to Verstappen" -> {{"intent": "comparison", "entities": \
+{{"driver": "verstappen", "comparison_type": "lap"}}, "filters": {{}}}}
 - "When should I pit?" -> {{"intent": "tire_strategy", "entities": {{}}, "filters": {{}}}}
-- "Who won the 2023 British GP?" -> {{"intent": "historical", "entities": {{"season": 2023, "circuit": "silverstone"}}, "filters": {{"season": 2023}}}}
+- "Who won the 2023 British GP?" -> {{"intent": "historical", "entities": \
+{{"season": 2023, "circuit": "silverstone"}}, "filters": {{"season": 2023}}}}
 
 User question: {question}"""
 
@@ -309,6 +316,7 @@ class ContextAssembler:
         sql_results: list[dict[str, Any]] | None = None,
         vector_results: list[dict[str, Any]] | None = None,
         graph_results: list[dict[str, Any]] | None = None,
+        docs_results: list[dict[str, Any]] | None = None,
     ) -> str:
         """Assemble context from multiple data sources.
 
@@ -317,6 +325,7 @@ class ContextAssembler:
             sql_results: Results from SQL queries.
             vector_results: Results from vector similarity search.
             graph_results: Results from graph traversal.
+            docs_results: Results from in-database text RAG (race_documents).
 
         Returns:
             Formatted context string for LLM response generation.
@@ -343,7 +352,17 @@ class ContextAssembler:
             for i, row in enumerate(graph_results[:10], 1):
                 sections.append(f"  [{i}] {json.dumps(row)}")
 
-        if not sql_results and not vector_results and not graph_results:
+        if docs_results:
+            sections.append("\n--- KNOWLEDGE BASE (Semantic Search) ---")
+            for i, row in enumerate(docs_results[:DOC_SEARCH_LIMIT], 1):
+                similarity = row.get("similarity", "N/A")
+                title = row.get("title", "")
+                content = row.get("content", "") or ""
+                if not isinstance(content, str):
+                    content = str(content)
+                sections.append(f"  [{i}] sim={similarity} -- {title} -- {content[:400]}")
+
+        if not sql_results and not vector_results and not graph_results and not docs_results:
             sections.append("\n--- NO DATA FOUND ---")
             sections.append("  No matching data was found in the database.")
 
@@ -356,12 +375,13 @@ class ContextAssembler:
             parsed_query: The parsed user query with SQL/vector/graph params.
 
         Returns:
-            Dict with 'sql', 'vector', 'graph' keys containing result lists.
+            Dict with 'sql', 'vector', 'graph', 'docs' keys containing result lists.
         """
         results: dict[str, list[dict]] = {
             "sql": [],
             "vector": [],
             "graph": [],
+            "docs": [],
         }
 
         async with self._pool.connection() as conn:
@@ -401,6 +421,39 @@ class ContextAssembler:
                     results["graph"] = await self._run(conn, graph_query, graph_bind)
                 except Exception as exc:
                     logger.warning("Graph traversal failed: %s", exc)
+
+            # In-database text RAG over race_documents (VECTOR_EMBEDDING)
+            # Runs only when the embedding model is loaded in the database.
+            try:
+                exists = await self._run(
+                    conn,
+                    "SELECT 1 FROM user_mining_models WHERE UPPER(model_name) = UPPER(:m)",
+                    {"m": DOC_EMBEDDING_MODEL},
+                )
+            except Exception as exc:
+                logger.warning("Embedding model check failed: %s", exc)
+                exists = []
+
+            if exists:
+                docs_sql = (
+                    "WITH q AS (SELECT VECTOR_EMBEDDING("
+                    f"{DOC_EMBEDDING_MODEL} USING :q AS DATA) AS qv FROM dual) "
+                    "SELECT d.doc_id, d.title, d.doc_type, "
+                    "DBMS_LOB.SUBSTR(d.content, 2000, 1) AS content, "
+                    "ROUND(VECTOR_DISTANCE(d.content_embedding, q.qv, COSINE), 4) AS similarity "
+                    "FROM race_documents d, q "
+                    "WHERE d.content_embedding IS NOT NULL "
+                    "ORDER BY similarity "
+                    "FETCH FIRST :k ROWS ONLY"
+                )
+                try:
+                    results["docs"] = await self._run(
+                        conn,
+                        docs_sql,
+                        {"q": parsed_query.raw_question, "k": DOC_SEARCH_LIMIT},
+                    )
+                except Exception as exc:
+                    logger.warning("Document retrieval failed: %s", exc)
 
         return results
 

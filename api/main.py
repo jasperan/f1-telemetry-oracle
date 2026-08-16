@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
+from api.services.agent import RaceEngineerAgent
 from api.services.ollama import OllamaClient
 from api.services.oracle import OraclePool
 from api.services.rag import ContextAssembler, QueryUnderstanding, ResponseGenerator
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.query_understanding = QueryUnderstanding(ollama_client=ollama_client)
     app.state.context_assembler = ContextAssembler(oracle_pool=pool)
     app.state.response_generator = ResponseGenerator(ollama_client=ollama_client)
+    app.state.agent = RaceEngineerAgent(
+        pool=pool, ollama_client=ollama_client, model=settings.ollama_model
+    )
 
     try:
         yield

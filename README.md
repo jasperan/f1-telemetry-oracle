@@ -34,10 +34,11 @@ DATA SOURCES                              ORACLE DATABASE 23ai FREE
 | Panel | Description |
 |-------|-------------|
 | **Live Telemetry** | Real-time speed, throttle, brake, steering via WebSocket from F1 24/25 UDP feed |
-| **AI Race Engineer** | Ask questions about lap performance, strategy, and history. RAG-powered with SQL + vector search + graph retrieval |
+| **AI Race Engineer** | Agentic tool-calling engineer — the LLM plans its own retrieval over 8 database tools (laps, telemetry, comparison, tire ONNX, pit strategy, vector search, semantic docs, setup). Falls back to classic SQL + vector + graph RAG. Every answer carries a transparency trace |
 | **3D Track Map** | Circuit visualization with Three.js -- car positions and telemetry heatmap overlays |
 | **Sim vs Real** | Overlay your F1 game telemetry against real-world F1 data, aligned by track distance |
-| **Strategy Advisor** | Tire degradation prediction and optimal pit window using in-database ONNX models |
+| **Driving Twin** | "Who do I drive like?" — per-sector telemetry embeddings scored by Oracle AI Vector Search match your lap to the real driver whose style it most resembles |
+| **Strategy Advisor** | Tire degradation and pit window scored by in-database ONNX models + a Monte Carlo race simulator (10,000s of races) that ranks pit strategies by win probability |
 | **Historical Explorer** | Natural language search over 75 years of F1 history from Ergast + OpenF1 |
 
 ## Oracle 23ai Features Used
@@ -45,8 +46,9 @@ DATA SOURCES                              ORACLE DATABASE 23ai FREE
 | Feature | Usage |
 |---------|-------|
 | **JSON Relational Duality Views** | Write telemetry as JSON documents, query relationally -- zero impedance mismatch |
-| **AI Vector Search** | 384-dim lap embeddings with cosine distance for semantic similarity search |
-| **In-Database ONNX** | Tire degradation predictor and pit window optimizer running inside the DB |
+| **AI Vector Search** | 384-dim lap + per-sector embeddings with cosine distance for semantic similarity search |
+| **In-Database ONNX** | Tire grip + remaining-life regression models **and** the all-MiniLM-L12-v2 text embedding model run inside the DB — `PREDICTION()` and `VECTOR_EMBEDDING()` do the ML, not Python |
+| **In-Database Text RAG** | `race_documents` knowledge base embedded and searched entirely in SQL with `VECTOR_EMBEDDING()` |
 | **Oracle Spatial** | Track geometry (SDO_GEOMETRY), haversine distance queries, circuit coordinate storage |
 | **JSON Document Store** | Weather data, car setup configs, and race event payloads stored as native JSON |
 
@@ -94,8 +96,13 @@ docker compose up --build
 # Seed circuit geometry and spatial data
 docker compose exec api python scripts/seed_circuits.py
 
-# Load ONNX models into Oracle
+# Load ONNX models into Oracle (tire grip + laps + MiniLM text embedding)
+# Downloads the augmented all-MiniLM-L12-v2 model on first run (~117 MB)
 docker compose exec api python scripts/load_onnx_models.py
+
+# Seed the RAG knowledge base (setup guides, strategy, circuit notes, history)
+# Documents are embedded IN the database via VECTOR_EMBEDDING()
+docker compose exec api python scripts/seed_race_documents.py
 ```
 
 ### Connect F1 24/25 Game
@@ -163,7 +170,10 @@ ollama serve   # or use the Ollama container in docker-compose
 # Unit tests (fast, no external deps)
 uv run pytest tests/unit/ -v
 
-# Integration tests (requires Oracle container on port 1525)
+# Integration tests (requires Oracle container; DSN overridable via ORACLE_TEST_DSN)
+# WARNING: the integration suite drops and recreates all tables in the target
+# database — point it at a dedicated container, and re-run
+# scripts/load_onnx_models.py + scripts/seed_race_documents.py afterwards.
 uv run pytest tests/integration/ -v -m integration
 
 # Frontend build verification
@@ -191,9 +201,11 @@ Interactive API docs are available at `http://localhost:8100/docs` (Swagger UI) 
 | `/api/laps/{id}/similar` | GET | Vector similarity search for similar laps |
 | `/api/compare/laps?ids=a,b` | GET | Compare two laps with distance-aligned telemetry deltas |
 | `/api/compare/sim-vs-real` | GET | Auto-match sim lap to best real-world lap and compare |
-| `/api/predict/tire-life` | POST | ONNX tire degradation prediction |
-| `/api/predict/pit-window` | POST | ONNX optimal pit window prediction |
-| `/api/chat/message` | POST | RAG-powered AI race engineer chat |
+| `/api/compare/driving-twin?lap_id=X` | GET | Per-sector driving-style match — which real driver you drive like |
+| `/api/predict/tire-life` | POST | In-database ONNX tire degradation prediction |
+| `/api/predict/pit-window` | POST | In-database ONNX optimal pit window prediction |
+| `/api/predict/strategy-sim` | POST | Monte Carlo race simulator — ranked pit strategies with win probability |
+| `/api/chat/message` | POST | Agentic (tool-calling) AI race engineer chat, with RAG fallback + retrieval trace |
 | `/ws/live` | WebSocket | Real-time telemetry stream |
 | `/ws/chat` | WebSocket | Streaming chat responses |
 | `/health` | GET | Health check |

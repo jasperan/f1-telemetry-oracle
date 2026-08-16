@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from api.db.columns import FRAME_COLUMNS as _FRAME_COLUMNS
 from api.db.columns import LAP_COLUMNS as _LAP_COLUMNS
 from api.models.schemas import DeltaPoint, LapComparisonResponse, SimVsRealResponse
+from api.services import driving as driving_service
 
 router = APIRouter(prefix="/compare", tags=["compare"])
 
@@ -166,6 +167,20 @@ async def compare_laps(
         deltas=deltas,
         sector_deltas=sector_deltas,
     )
+
+
+@router.get("/driving-twin")
+async def driving_twin(
+    request: Request,
+    lap_id: str = Query(..., description="Sim lap ID to analyze"),
+    top_k: int = Query(5, ge=1, le=20, description="Candidates per sector"),
+):
+    """Find the real driver whose driving style most resembles a sim lap.
+
+    Uses per-sector telemetry embeddings scored by Oracle AI Vector
+    Search — "who do I drive like, corner by corner?"
+    """
+    return await driving_service.driving_twin(request.app.state.pool, lap_id, top_k=top_k)
 
 
 @router.get("/sim-vs-real", response_model=SimVsRealResponse)

@@ -239,6 +239,10 @@ class TireLifeResponse(BaseModel):
     degradation_rate_pct_per_lap: float
     current_grip_pct: float
     recommendation: str
+    model_used: str = Field(
+        default="heuristic",
+        description="Scoring engine: 'onnx' (in-database model) or 'heuristic' (fallback)",
+    )
 
 
 class PitWindowRequest(BaseModel):
@@ -257,6 +261,38 @@ class PitWindowResponse(BaseModel):
     strategy_description: str
     undercut_viable: bool = False
     overcut_viable: bool = False
+    model_used: str = Field(
+        default="heuristic",
+        description="Scoring engine: 'onnx' (in-database model) or 'heuristic' (fallback)",
+    )
+
+
+class StrategySimRequest(BaseModel):
+    total_laps: int = Field(53, ge=2, le=120, description="Race length in laps")
+    track_temp_c: float = Field(30.0, ge=0.0, le=60.0, description="Track temperature")
+    fuel_start_kg: float = Field(110.0, ge=0.0, le=150.0, description="Starting fuel load")
+    n_sims: int = Field(500, ge=50, le=5000, description="Simulations per strategy")
+    seed: int = 42
+    compounds: list[str] | None = Field(
+        default=None, description="Candidate compounds (default SOFT/MEDIUM/HARD)"
+    )
+
+
+class StrategySimStrategy(BaseModel):
+    strategy: list[str]
+    median_race_time_s: float
+    p10_race_time_s: float
+    p90_race_time_s: float
+    win_probability: float
+    rank: int
+
+
+class StrategySimResponse(BaseModel):
+    total_laps: int
+    track_temp_c: float
+    n_sims: int
+    fastest_median_s: float
+    strategies: list[StrategySimStrategy]
 
 
 # ============================================================

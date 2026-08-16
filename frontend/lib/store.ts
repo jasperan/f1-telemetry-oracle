@@ -42,6 +42,16 @@ export interface SessionInfo {
 
 // --- Chat Types ---
 
+export interface RetrievalTrace {
+  path: "agent" | "rag";
+  intent?: string;
+  entities?: Record<string, unknown>;
+  tool_calls?: string[];
+  iterations?: number;
+  sources?: Record<string, number>;
+  stages_ms?: Record<string, number>;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
@@ -50,6 +60,7 @@ export interface ChatMessage {
   entities?: Record<string, unknown>;
   sources?: Record<string, number>;
   elapsed_ms?: number;
+  trace?: RetrievalTrace;
   timestamp: number;
 }
 
