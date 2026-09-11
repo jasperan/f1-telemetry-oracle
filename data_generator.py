@@ -180,12 +180,6 @@ def load_keyboard_sequence(keyboard_sequence_name):
 def record(file_name):
     recorded = keyboard.record(until='f8')
     del recorded[-1] # delete the end trigger
-    '''
-    for x in recorded:
-        #print(x)
-        print(str(x))
-        print(str(x).split('('))
-    '''
     print(recorded)
     save_keyboard_sequence(file_name, recorded)
 
