@@ -88,3 +88,36 @@ class TestEmbedText:
 
         pool = FakePool(cursor=BrokenCursor())
         assert await embed_text(pool, "ALL_MINILM_L12_V2", "hello") is None
+
+
+class TestIdentifierValidation:
+    """The model name and the input aliases are interpolated into SQL, so both are validated.
+
+    .audit/SECURITY.md records this as LOW-1: every caller passes constants today, and these
+    tests keep that property from becoming a habit that a future caller can break.
+    """
+
+    @pytest.mark.asyncio
+    async def test_rejects_a_model_name_that_is_not_an_identifier(self):
+        cursor = FakeCursor(fetchone_result=(62.5,))
+        pool = FakePool(cursor=cursor)
+        assert await score_regression(pool, "TIRE_GRIP; DROP TABLE laps", {"A": 1}) is None
+        assert cursor.executed == []  # the statement never reached the database
+
+    @pytest.mark.asyncio
+    async def test_rejects_an_input_alias_that_is_not_an_identifier(self):
+        cursor = FakeCursor(fetchone_result=(62.5,))
+        pool = FakePool(cursor=cursor)
+        assert await score_regression(pool, "TIRE_GRIP_MODEL", {"BAD ALIAS": 1}) is None
+        assert cursor.executed == []
+
+    @pytest.mark.asyncio
+    async def test_rejects_a_lowercase_or_punctuated_model_name(self):
+        pool = FakePool(cursor=FakeCursor(fetchone_result=(1,)))
+        assert await score_regression(pool, "tire_grip", {"A": 1}) is None
+        assert await embed_text(pool, "bad-name", "text") is None
+
+    @pytest.mark.asyncio
+    async def test_accepts_the_identifiers_the_code_actually_uses(self):
+        pool = FakePool(cursor=FakeCursor(fetchone_result=(62.5,)))
+        assert await score_regression(pool, "TIRE_GRIP_MODEL", {"TIRE_AGE_LAPS": 10}) == 62.5
