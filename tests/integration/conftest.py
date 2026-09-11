@@ -68,9 +68,7 @@ async def apply_ddl(pool: OraclePool):
             for raw_stmt in sql_text.split(";"):
                 # Strip leading comment lines from each segment
                 lines = [
-                    line
-                    for line in raw_stmt.strip().splitlines()
-                    if line.strip() and not line.strip().startswith("--")
+                    line for line in raw_stmt.strip().splitlines() if line.strip() and not line.strip().startswith("--")
                 ]
                 stmt = "\n".join(lines).strip()
                 if stmt:

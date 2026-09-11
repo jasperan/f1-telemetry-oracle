@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, HTTPStatusError, Request
 
 from api.services.ollama import OllamaClient
 
@@ -76,11 +76,13 @@ class TestOllamaClient:
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.text = "Internal Server Error"
-        mock_response.raise_for_status.side_effect = Exception("500 Server Error")
+        mock_response.raise_for_status.side_effect = HTTPStatusError(
+            "500 Server Error", request=Request("POST", "http://localhost:11434"), response=mock_response
+        )
 
         with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
             client = OllamaClient(base_url="http://localhost:11434")
-            with pytest.raises(Exception):
+            with pytest.raises(HTTPStatusError):
                 await client.chat(
                     model="qwen3.5:35b-a3b",
                     messages=[{"role": "user", "content": "test"}],
@@ -124,8 +126,7 @@ class TestChatRouter:
         }
         app.state.context_assembler.assemble.return_value = "CONTEXT: tire data..."
         app.state.response_generator.generate.return_value = (
-            "Based on your tire data, **pit on lap 18**. "
-            "Your softs are 12 laps old and degradation is increasing."
+            "Based on your tire data, **pit on lap 18**. Your softs are 12 laps old and degradation is increasing."
         )
 
         transport = ASGITransport(app=app)
@@ -162,7 +163,9 @@ class TestChatRouter:
             raw_question="Hello",
         )
         app.state.context_assembler.execute_retrieval.return_value = {
-            "sql": [], "vector": [], "graph": [],
+            "sql": [],
+            "vector": [],
+            "graph": [],
         }
         app.state.context_assembler.assemble.return_value = "CONTEXT"
         app.state.response_generator.generate.return_value = "Hello! I'm your race engineer."

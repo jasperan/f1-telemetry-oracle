@@ -93,7 +93,7 @@ def _seconds_to_ms(seconds: float | None) -> int | None:
     """Convert a float seconds value to integer milliseconds."""
     if seconds is None:
         return None
-    return int(round(seconds * 1000))
+    return round(seconds * 1000)
 
 
 def _parse_lap_time_string(time_str: str) -> int:
@@ -115,7 +115,7 @@ def _parse_lap_time_string(time_str: str) -> int:
         total_seconds = int(minutes) * 60 + seconds
     else:
         total_seconds = float(parts[0])
-    return int(round(total_seconds * 1000))
+    return round(total_seconds * 1000)
 
 
 # ============================================================
@@ -180,7 +180,9 @@ def normalize_openf1_lap(data: dict[str, Any]) -> NormalizedLap:
         session_id=str(data.get("session_key", "")),
         driver_id=f"openf1-{data.get('driver_number', 0)}",
         driver_code=data.get("driver_code"),
-        circuit_id=data.get("circuit_short_name", "").lower().replace(" ", "-") if data.get("circuit_short_name") else None,
+        circuit_id=(
+            data.get("circuit_short_name", "").lower().replace(" ", "-") if data.get("circuit_short_name") else None
+        ),
         source="openf1",
         lap_number=data.get("lap_number"),
         sector1_ms=_seconds_to_ms(data.get("duration_sector_1")),

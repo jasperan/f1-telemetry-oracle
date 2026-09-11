@@ -27,9 +27,7 @@ class TestBuildTireDegradationModels:
     """Test synthetic model training."""
 
     def test_models_train_successfully(self):
-        (grip_model, laps_model), feature_names = build_tire_degradation_models(
-            n_samples=500, random_state=42
-        )
+        (grip_model, laps_model), feature_names = build_tire_degradation_models(n_samples=500, random_state=42)
         assert grip_model is not None
         assert laps_model is not None
         assert len(feature_names) == 4
@@ -44,9 +42,7 @@ class TestBuildTireDegradationModels:
         ]
 
     def test_models_predict(self):
-        (grip_model, laps_model), _ = build_tire_degradation_models(
-            n_samples=500, random_state=42
-        )
+        (grip_model, laps_model), _ = build_tire_degradation_models(n_samples=500, random_state=42)
         # Single sample: 10 laps old, 35C, 80kg fuel, soft compound (0)
         x = np.array([[10, 35.0, 80.0, 0]])
         grip = grip_model.predict(x)
@@ -60,9 +56,7 @@ class TestExportToOnnx:
     """Test ONNX export."""
 
     def test_export_creates_file(self):
-        (grip_model, _), feature_names = build_tire_degradation_models(
-            n_samples=500, random_state=42
-        )
+        (grip_model, _), feature_names = build_tire_degradation_models(n_samples=500, random_state=42)
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "tire_grip.onnx")
             export_to_onnx(grip_model, feature_names, path)
@@ -70,9 +64,7 @@ class TestExportToOnnx:
             assert os.path.getsize(path) > 0
 
     def test_onnx_model_produces_single_output(self):
-        (grip_model, _), feature_names = build_tire_degradation_models(
-            n_samples=500, random_state=42
-        )
+        (grip_model, _), feature_names = build_tire_degradation_models(n_samples=500, random_state=42)
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "tire_grip.onnx")
             export_to_onnx(grip_model, feature_names, path)
@@ -107,9 +99,7 @@ class TestLoadModelIntoOracle:
         mock_pool.connection = _fake_connection
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            (grip_model, _), feature_names = build_tire_degradation_models(
-                n_samples=100, random_state=42
-            )
+            (grip_model, _), feature_names = build_tire_degradation_models(n_samples=100, random_state=42)
             path = os.path.join(tmpdir, "tire_grip.onnx")
             export_to_onnx(grip_model, feature_names, path)
 

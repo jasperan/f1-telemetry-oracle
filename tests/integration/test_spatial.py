@@ -17,15 +17,17 @@ pytestmark = [
 
 async def test_insert_circuit_with_geometry(pool: OraclePool):
     """Insert a circuit with JSON track geometry and calculate distance using haversine."""
-    track_geometry = json.dumps({
-        "type": "LineString",
-        "coordinates": [
-            [9.2724, 45.6186],
-            [9.2890, 45.6208],
-            [9.2876, 45.6100],
-            [9.2753, 45.6126],
-        ],
-    })
+    track_geometry = json.dumps(
+        {
+            "type": "LineString",
+            "coordinates": [
+                [9.2724, 45.6186],
+                [9.2890, 45.6208],
+                [9.2876, 45.6100],
+                [9.2753, 45.6126],
+            ],
+        }
+    )
 
     async with pool.connection() as conn:
         cursor = conn.cursor()
@@ -104,8 +106,6 @@ async def test_seed_circuits(pool: OraclePool):
 
     async with pool.connection() as conn:
         cursor = conn.cursor()
-        await cursor.execute(
-            "SELECT COUNT(*) FROM circuits WHERE track_geometry IS NOT NULL"
-        )
+        await cursor.execute("SELECT COUNT(*) FROM circuits WHERE track_geometry IS NOT NULL")
         row = await cursor.fetchone()
         assert row[0] >= 3, f"Expected >= 3 circuits with geometry, got {row[0]}"

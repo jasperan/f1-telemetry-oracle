@@ -138,9 +138,7 @@ class TestErgastCollector:
         """Fetch results for a specific race and get NormalizedLap list."""
         base_url = "https://ergast.com/api/f1"
 
-        respx.get(f"{base_url}/2024/16/results.json").mock(
-            return_value=httpx.Response(200, json=MOCK_ERGAST_RESPONSE)
-        )
+        respx.get(f"{base_url}/2024/16/results.json").mock(return_value=httpx.Response(200, json=MOCK_ERGAST_RESPONSE))
 
         collector = ErgastCollector(base_url=base_url)
         laps = await collector.fetch_race_results(season=2024, round_num=16)
@@ -176,9 +174,7 @@ class TestErgastCollector:
         """Fetch the race calendar for a season."""
         base_url = "https://ergast.com/api/f1"
 
-        respx.get(f"{base_url}/2024.json").mock(
-            return_value=httpx.Response(200, json=MOCK_SCHEDULE_RESPONSE)
-        )
+        respx.get(f"{base_url}/2024.json").mock(return_value=httpx.Response(200, json=MOCK_SCHEDULE_RESPONSE))
 
         collector = ErgastCollector(base_url=base_url)
         races = await collector.fetch_season_schedule(season=2024)
@@ -202,9 +198,7 @@ class TestErgastCollector:
                 }
             }
         }
-        respx.get(f"{base_url}/2024/99/results.json").mock(
-            return_value=httpx.Response(200, json=empty_response)
-        )
+        respx.get(f"{base_url}/2024/99/results.json").mock(return_value=httpx.Response(200, json=empty_response))
 
         collector = ErgastCollector(base_url=base_url)
         laps = await collector.fetch_race_results(season=2024, round_num=99)
@@ -232,9 +226,7 @@ class TestErgastCollector:
         """Collector extracts circuit metadata from race results."""
         base_url = "https://ergast.com/api/f1"
 
-        respx.get(f"{base_url}/2024/16/results.json").mock(
-            return_value=httpx.Response(200, json=MOCK_ERGAST_RESPONSE)
-        )
+        respx.get(f"{base_url}/2024/16/results.json").mock(return_value=httpx.Response(200, json=MOCK_ERGAST_RESPONSE))
 
         collector = ErgastCollector(base_url=base_url)
         laps = await collector.fetch_race_results(season=2024, round_num=16)

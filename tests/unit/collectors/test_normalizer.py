@@ -1,6 +1,5 @@
 """Test that all three data sources normalize to identical NormalizedLap structure."""
 
-
 from collectors.normalizer import (
     NormalizedLap,
     normalize_ergast_result,
@@ -27,7 +26,7 @@ MOCK_F1_UDP_LAP = {
         "grid_position": 3,
     },
     "car_status": {
-        "tyre_compound_visual": 16,    # SOFT
+        "tyre_compound_visual": 16,  # SOFT
         "tyres_age_laps": 3,
         "fuel_in_tank": 42.5,
         "ers_deploy_mode": 3,

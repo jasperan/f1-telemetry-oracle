@@ -26,13 +26,13 @@ DOC_SEARCH_LIMIT = 5
 
 # Supported intents the query parser can extract
 SUPPORTED_INTENTS = [
-    "sector_analysis",    # Why am I slow in sector X?
-    "comparison",         # Compare my lap to driver Y
-    "tire_strategy",      # When should I pit? Tire life?
-    "setup_advice",       # What setup changes for more rear grip?
-    "historical",         # Who won the 2023 British GP?
-    "lap_analysis",       # Analyze my last lap
-    "general",            # Fallback for anything else
+    "sector_analysis",  # Why am I slow in sector X?
+    "comparison",  # Compare my lap to driver Y
+    "tire_strategy",  # When should I pit? Tire life?
+    "setup_advice",  # What setup changes for more rear grip?
+    "historical",  # Who won the 2023 British GP?
+    "lap_analysis",  # Analyze my last lap
+    "general",  # Fallback for anything else
 ]
 
 QUERY_UNDERSTANDING_PROMPT = """You are an F1 race engineer AI. Parse the user's question into a structured JSON object.
@@ -79,55 +79,63 @@ class ParsedQuery:
             # Validate sector is 1, 2, or 3 to avoid column-name injection
             if sector not in (1, 2, 3):
                 sector = 1
-            queries.append((
-                f"SELECT l.lap_id, l.sector{sector}_ms, l.lap_time_ms, "
-                "d.code, c.circuit_name "
-                "FROM laps l "
-                "JOIN sessions s ON l.session_id = s.session_id "
-                "JOIN circuits c ON s.circuit_id = c.circuit_id "
-                "JOIN drivers d ON l.driver_id = d.driver_id "
-                "WHERE LOWER(c.circuit_name) LIKE :circuit "
-                f"ORDER BY l.sector{sector}_ms ASC "
-                "FETCH FIRST 20 ROWS ONLY",
-                {"circuit": f"%{circuit.lower()}%"},
-            ))
-            queries.append((
-                "SELECT tf.distance_m, tf.speed_kph, tf.throttle_pct, tf.brake_pct, tf.steering "
-                "FROM telemetry_frames tf "
-                "JOIN laps l ON tf.lap_id = l.lap_id "
-                "JOIN sessions s ON l.session_id = s.session_id "
-                "JOIN circuits c ON s.circuit_id = c.circuit_id "
-                "WHERE LOWER(c.circuit_name) LIKE :circuit "
-                "AND l.driver_id = (SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
-                "ORDER BY tf.distance_m",
-                {"circuit": f"%{circuit.lower()}%"},
-            ))
+            queries.append(
+                (
+                    f"SELECT l.lap_id, l.sector{sector}_ms, l.lap_time_ms, "
+                    "d.code, c.circuit_name "
+                    "FROM laps l "
+                    "JOIN sessions s ON l.session_id = s.session_id "
+                    "JOIN circuits c ON s.circuit_id = c.circuit_id "
+                    "JOIN drivers d ON l.driver_id = d.driver_id "
+                    "WHERE LOWER(c.circuit_name) LIKE :circuit "
+                    f"ORDER BY l.sector{sector}_ms ASC "
+                    "FETCH FIRST 20 ROWS ONLY",
+                    {"circuit": f"%{circuit.lower()}%"},
+                )
+            )
+            queries.append(
+                (
+                    "SELECT tf.distance_m, tf.speed_kph, tf.throttle_pct, tf.brake_pct, tf.steering "
+                    "FROM telemetry_frames tf "
+                    "JOIN laps l ON tf.lap_id = l.lap_id "
+                    "JOIN sessions s ON l.session_id = s.session_id "
+                    "JOIN circuits c ON s.circuit_id = c.circuit_id "
+                    "WHERE LOWER(c.circuit_name) LIKE :circuit "
+                    "AND l.driver_id = (SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
+                    "ORDER BY tf.distance_m",
+                    {"circuit": f"%{circuit.lower()}%"},
+                )
+            )
 
         elif self.intent == "comparison":
             driver = self.entities.get("driver", "")
-            queries.append((
-                "SELECT l.lap_id, l.lap_time_ms, l.sector1_ms, "
-                "l.sector2_ms, l.sector3_ms, d.code "
-                "FROM laps l "
-                "JOIN drivers d ON l.driver_id = d.driver_id "
-                "WHERE LOWER(d.code) LIKE :driver "
-                "OR LOWER(d.first_name || ' ' || d.last_name) LIKE :driver "
-                "ORDER BY l.lap_time_ms ASC "
-                "FETCH FIRST 10 ROWS ONLY",
-                {"driver": f"%{driver.lower()}%"},
-            ))
+            queries.append(
+                (
+                    "SELECT l.lap_id, l.lap_time_ms, l.sector1_ms, "
+                    "l.sector2_ms, l.sector3_ms, d.code "
+                    "FROM laps l "
+                    "JOIN drivers d ON l.driver_id = d.driver_id "
+                    "WHERE LOWER(d.code) LIKE :driver "
+                    "OR LOWER(d.first_name || ' ' || d.last_name) LIKE :driver "
+                    "ORDER BY l.lap_time_ms ASC "
+                    "FETCH FIRST 10 ROWS ONLY",
+                    {"driver": f"%{driver.lower()}%"},
+                )
+            )
 
         elif self.intent == "tire_strategy":
-            queries.append((
-                "SELECT l.lap_number, l.tire_compound, l.tire_age_laps, "
-                "l.lap_time_ms, l.sector1_ms, l.sector2_ms, l.sector3_ms "
-                "FROM laps l "
-                "JOIN sessions s ON l.session_id = s.session_id "
-                "WHERE l.driver_id = (SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
-                "AND s.session_id = (SELECT MAX(session_id) FROM sessions WHERE source = 'sim') "
-                "ORDER BY l.lap_number",
-                {},
-            ))
+            queries.append(
+                (
+                    "SELECT l.lap_number, l.tire_compound, l.tire_age_laps, "
+                    "l.lap_time_ms, l.sector1_ms, l.sector2_ms, l.sector3_ms "
+                    "FROM laps l "
+                    "JOIN sessions s ON l.session_id = s.session_id "
+                    "WHERE l.driver_id = (SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
+                    "AND s.session_id = (SELECT MAX(session_id) FROM sessions WHERE source = 'sim') "
+                    "ORDER BY l.lap_number",
+                    {},
+                )
+            )
 
         elif self.intent == "historical":
             season = self.filters.get("season")
@@ -137,45 +145,49 @@ class ParsedQuery:
             if season:
                 season_clause = "AND EXTRACT(YEAR FROM s.started_at) = :season "
                 bind_params["season"] = season
-            queries.append((
-                "SELECT d.first_name || ' ' || d.last_name AS driver_name, "
-                "d.code, "
-                "l.lap_time_ms, l.position, s.started_at "
-                "FROM laps l "
-                "JOIN sessions s ON l.session_id = s.session_id "
-                "JOIN circuits c ON s.circuit_id = c.circuit_id "
-                "JOIN drivers d ON l.driver_id = d.driver_id "
-                "WHERE LOWER(c.circuit_name) LIKE :circuit "
-                + season_clause
-                + "ORDER BY l.position ASC "
-                "FETCH FIRST 20 ROWS ONLY",
-                bind_params,
-            ))
+            queries.append(
+                (
+                    "SELECT d.first_name || ' ' || d.last_name AS driver_name, "
+                    "d.code, "
+                    "l.lap_time_ms, l.position, s.started_at "
+                    "FROM laps l "
+                    "JOIN sessions s ON l.session_id = s.session_id "
+                    "JOIN circuits c ON s.circuit_id = c.circuit_id "
+                    "JOIN drivers d ON l.driver_id = d.driver_id "
+                    "WHERE LOWER(c.circuit_name) LIKE :circuit " + season_clause + "ORDER BY l.position ASC "
+                    "FETCH FIRST 20 ROWS ONLY",
+                    bind_params,
+                )
+            )
 
         elif self.intent == "lap_analysis":
-            queries.append((
-                "SELECT l.lap_id, l.lap_time_ms, l.sector1_ms, "
-                "l.sector2_ms, l.sector3_ms, l.tire_compound, "
-                "l.tire_age_laps, l.fuel_load_kg "
-                "FROM laps l "
-                "WHERE l.driver_id = (SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
-                "ORDER BY l.lap_id DESC "
-                "FETCH FIRST 5 ROWS ONLY",
-                {},
-            ))
+            queries.append(
+                (
+                    "SELECT l.lap_id, l.lap_time_ms, l.sector1_ms, "
+                    "l.sector2_ms, l.sector3_ms, l.tire_compound, "
+                    "l.tire_age_laps, l.fuel_load_kg "
+                    "FROM laps l "
+                    "WHERE l.driver_id = (SELECT driver_id FROM drivers WHERE is_sim_player = 1) "
+                    "ORDER BY l.lap_id DESC "
+                    "FETCH FIRST 5 ROWS ONLY",
+                    {},
+                )
+            )
 
         else:
             # General: fetch recent laps for context
-            queries.append((
-                "SELECT l.lap_id, l.lap_time_ms, d.code, c.circuit_name AS circuit "
-                "FROM laps l "
-                "JOIN sessions s ON l.session_id = s.session_id "
-                "JOIN circuits c ON s.circuit_id = c.circuit_id "
-                "JOIN drivers d ON l.driver_id = d.driver_id "
-                "ORDER BY l.lap_id DESC "
-                "FETCH FIRST 10 ROWS ONLY",
-                {},
-            ))
+            queries.append(
+                (
+                    "SELECT l.lap_id, l.lap_time_ms, d.code, c.circuit_name AS circuit "
+                    "FROM laps l "
+                    "JOIN sessions s ON l.session_id = s.session_id "
+                    "JOIN circuits c ON s.circuit_id = c.circuit_id "
+                    "JOIN drivers d ON l.driver_id = d.driver_id "
+                    "ORDER BY l.lap_id DESC "
+                    "FETCH FIRST 10 ROWS ONLY",
+                    {},
+                )
+            )
 
         return queries
 
@@ -407,9 +419,7 @@ class ContextAssembler:
                 "FETCH FIRST :top_k ROWS ONLY"
             )
             try:
-                results["vector"] = await self._run(
-                    conn, vector_sql, {"top_k": int(vs_params["top_k"])}
-                )
+                results["vector"] = await self._run(conn, vector_sql, {"top_k": int(vs_params["top_k"])})
             except Exception as exc:
                 logger.warning("Vector search failed: %s", exc)
 

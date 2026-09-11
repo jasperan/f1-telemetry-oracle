@@ -38,7 +38,7 @@ class TestF1UDPListener:
             received_packets.append((header, data))
 
         listener = F1UDPListener(host="127.0.0.1", port=0, on_packet=on_packet)
-        transport, port = await listener.start()
+        _transport, port = await listener.start()
 
         try:
             # Send test packets
@@ -78,7 +78,7 @@ class TestF1UDPListener:
             laps_received.append(lap)
 
         listener = F1UDPListener(host="127.0.0.1", port=0, on_lap=on_lap)
-        transport, port = await listener.start()
+        _transport, port = await listener.start()
 
         try:
             # Send the packets needed to assemble a lap
@@ -121,7 +121,7 @@ class TestF1UDPListener:
             frames_received.append(frame)
 
         listener = F1UDPListener(host="127.0.0.1", port=0, on_frame=on_frame)
-        transport, port = await listener.start()
+        _transport, port = await listener.start()
 
         try:
             # Send motion first, then telemetry (frame emitted when both are present)

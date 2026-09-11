@@ -172,7 +172,7 @@ def make_lap_data_packet() -> bytes:
             0,  # pitStatus
             0,  # numPitStops
             2,  # sector (0-indexed)
-            0 if is_player else 0,  # currentLapInvalid
+            0,  # currentLapInvalid
             0,  # penalties
             0,  # totalWarnings
             0,  # cornerCuttingWarnings

@@ -36,14 +36,16 @@ class TestQueryUnderstanding:
         """'Why am I slow in sector 2 at Silverstone?' -> sector_analysis intent."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "sector_analysis",
-                    "entities": {
-                        "sector": 2,
-                        "circuit": "silverstone",
-                    },
-                    "filters": {},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "sector_analysis",
+                        "entities": {
+                            "sector": 2,
+                            "circuit": "silverstone",
+                        },
+                        "filters": {},
+                    }
+                )
             }
         }
 
@@ -58,14 +60,16 @@ class TestQueryUnderstanding:
         """'Compare my lap to Verstappen' -> comparison intent."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "comparison",
-                    "entities": {
-                        "driver": "verstappen",
-                        "comparison_type": "lap",
-                    },
-                    "filters": {},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "comparison",
+                        "entities": {
+                            "driver": "verstappen",
+                            "comparison_type": "lap",
+                        },
+                        "filters": {},
+                    }
+                )
             }
         }
 
@@ -78,11 +82,13 @@ class TestQueryUnderstanding:
         """'When should I pit?' -> tire_strategy intent."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "tire_strategy",
-                    "entities": {},
-                    "filters": {},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "tire_strategy",
+                        "entities": {},
+                        "filters": {},
+                    }
+                )
             }
         }
 
@@ -94,14 +100,16 @@ class TestQueryUnderstanding:
         """'Who won the 2023 British GP?' -> historical intent."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "historical",
-                    "entities": {
-                        "season": 2023,
-                        "circuit": "silverstone",
-                    },
-                    "filters": {"season": 2023},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "historical",
+                        "entities": {
+                            "season": 2023,
+                            "circuit": "silverstone",
+                        },
+                        "filters": {"season": 2023},
+                    }
+                )
             }
         }
 
@@ -114,11 +122,13 @@ class TestQueryUnderstanding:
         """Parsed query should produce parameterized SQL for retrieval."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "sector_analysis",
-                    "entities": {"sector": 2, "circuit": "silverstone"},
-                    "filters": {},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "sector_analysis",
+                        "entities": {"sector": 2, "circuit": "silverstone"},
+                        "filters": {},
+                    }
+                )
             }
         }
 
@@ -141,11 +151,13 @@ class TestQueryUnderstanding:
         """Parsed query should produce vector search parameters."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "comparison",
-                    "entities": {"driver": "verstappen"},
-                    "filters": {},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "comparison",
+                        "entities": {"driver": "verstappen"},
+                        "filters": {},
+                    }
+                )
             }
         }
 
@@ -157,9 +169,7 @@ class TestQueryUnderstanding:
     @pytest.mark.asyncio
     async def test_fallback_on_unparseable(self, query_parser):
         """Unparseable LLM output falls back to general intent."""
-        query_parser._ollama.chat.return_value = {
-            "message": {"content": "I don't understand the format"}
-        }
+        query_parser._ollama.chat.return_value = {"message": {"content": "I don't understand the format"}}
 
         result = await query_parser.parse("random gibberish query")
         assert result.intent == "general"
@@ -170,11 +180,13 @@ class TestQueryUnderstanding:
         """Historical queries with a driver entity should generate a graph traversal."""
         query_parser._ollama.chat.return_value = {
             "message": {
-                "content": json.dumps({
-                    "intent": "historical",
-                    "entities": {"driver": "verstappen", "season": 2023},
-                    "filters": {"season": 2023},
-                })
+                "content": json.dumps(
+                    {
+                        "intent": "historical",
+                        "entities": {"driver": "verstappen", "season": 2023},
+                        "filters": {"season": 2023},
+                    }
+                )
             }
         }
 
@@ -232,11 +244,7 @@ class TestResponseGenerator:
     @pytest.mark.asyncio
     async def test_generate_non_streaming(self):
         mock_ollama = AsyncMock()
-        mock_ollama.chat.return_value = {
-            "message": {
-                "content": "Based on your tire data, pit on lap 18."
-            }
-        }
+        mock_ollama.chat.return_value = {"message": {"content": "Based on your tire data, pit on lap 18."}}
 
         generator = ResponseGenerator(ollama_client=mock_ollama)
         response = await generator.generate("CONTEXT: tire data...")
@@ -247,9 +255,7 @@ class TestResponseGenerator:
     @pytest.mark.asyncio
     async def test_generate_passes_system_prompt(self):
         mock_ollama = AsyncMock()
-        mock_ollama.chat.return_value = {
-            "message": {"content": "Response"}
-        }
+        mock_ollama.chat.return_value = {"message": {"content": "Response"}}
 
         generator = ResponseGenerator(ollama_client=mock_ollama)
         await generator.generate("CONTEXT")

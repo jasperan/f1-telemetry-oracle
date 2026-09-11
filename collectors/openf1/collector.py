@@ -190,9 +190,7 @@ class OpenF1Collector:
             lap_num = lap.get("lap_number", 0)
             if stint.get("lap_start", 0) <= lap_num <= stint.get("lap_end", 9999):
                 lap["compound"] = stint.get("compound")
-                lap["tyre_age_at_start"] = stint.get("tyre_age_at_start", 0) + (
-                    lap_num - stint.get("lap_start", 0)
-                )
+                lap["tyre_age_at_start"] = stint.get("tyre_age_at_start", 0) + (lap_num - stint.get("lap_start", 0))
                 break
 
         lap["circuit_short_name"] = circuit_short_name
@@ -229,10 +227,7 @@ class OpenF1Collector:
         # Deduplicate by (driver_number, lap_number, date_start)
         unique_laps = self._dedup_laps(raw_laps, set())
 
-        normalized = [
-            self._enrich_and_normalize(lap, driver_map, stint_map, circuit_short_name)
-            for lap in unique_laps
-        ]
+        normalized = [self._enrich_and_normalize(lap, driver_map, stint_map, circuit_short_name) for lap in unique_laps]
 
         logger.info(
             "Fetched %d laps for session %d (%d raw, %d after dedup)",
@@ -398,8 +393,7 @@ class OpenF1Collector:
 
             if new_raw:
                 normalized = [
-                    self._enrich_and_normalize(lap, driver_map, stint_map, circuit_short_name)
-                    for lap in new_raw
+                    self._enrich_and_normalize(lap, driver_map, stint_map, circuit_short_name) for lap in new_raw
                 ]
                 logger.info("Live poll %d: %d new laps", poll_count, len(normalized))
                 await callback(normalized)

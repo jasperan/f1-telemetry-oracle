@@ -274,10 +274,12 @@ class RaceEngineerAgent:
                         logger.warning("Tool %s failed: %s", name, exc)
                         result = {"error": str(exc)[:300]}
 
-                messages.append({
-                    "role": "tool",
-                    "content": json.dumps(result, default=str)[:6000],
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "content": json.dumps(result, default=str)[:6000],
+                    }
+                )
 
         raise AgenticError(f"Agent loop exceeded {MAX_AGENT_ITERATIONS} iterations")
 
@@ -342,9 +344,7 @@ class RaceEngineerAgent:
             "FROM telemetry_frames WHERE lap_id = :1 ORDER BY distance_m FETCH FIRST :2 ROWS ONLY",
             [lap_id, limit],
         )
-        lap = await self._run_sql(
-            f"SELECT {_LAP_COLUMNS} FROM laps WHERE lap_id = :1", [lap_id]
-        )
+        lap = await self._run_sql(f"SELECT {_LAP_COLUMNS} FROM laps WHERE lap_id = :1", [lap_id])
         return {"lap_id": lap_id, "lap": lap[:1], "frames": frames}
 
     async def _tool_compare_laps(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -386,9 +386,7 @@ class RaceEngineerAgent:
                 "speed_delta_kph": max_speed_loss.speed_delta,
             }
             # Sample every 10th delta point for detail
-            summary["sample_deltas"] = [
-                d.model_dump() for d in deltas[:: max(1, len(deltas) // 20)]
-            ]
+            summary["sample_deltas"] = [d.model_dump() for d in deltas[:: max(1, len(deltas) // 20)]]
         return summary
 
     async def _tool_tire_life(self, args: dict[str, Any]) -> dict[str, Any]:

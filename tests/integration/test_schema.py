@@ -25,9 +25,7 @@ async def test_all_tables_exist(pool: OraclePool):
     """All 10 tables must exist (created by conftest apply_ddl)."""
     async with pool.connection() as conn:
         cursor = conn.cursor()
-        await cursor.execute(
-            "SELECT table_name FROM user_tables ORDER BY table_name"
-        )
+        await cursor.execute("SELECT table_name FROM user_tables ORDER BY table_name")
         rows = await cursor.fetchall()
         existing = {row[0] for row in rows}
 

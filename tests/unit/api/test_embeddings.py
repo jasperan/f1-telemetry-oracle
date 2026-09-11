@@ -19,7 +19,9 @@ from api.services.embeddings import (
 
 
 def _make_telemetry(
-    n_points: int, speed_base: float = 280.0, seed: int = 42,
+    n_points: int,
+    speed_base: float = 280.0,
+    seed: int = 42,
 ) -> dict[str, np.ndarray]:
     """Generate synthetic telemetry with n_points samples across 6 channels."""
     rng = np.random.RandomState(seed)
@@ -136,7 +138,7 @@ class TestLapEmbedder:
             "brake": telem_a["brake"] + np.random.RandomState(12).randn(n) * 0.005,
             "steering": telem_a["steering"] + np.random.RandomState(13).randn(n) * 0.02,
             "gear": telem_a["gear"],  # identical
-            "drs": telem_a["drs"],    # identical
+            "drs": telem_a["drs"],  # identical
         }
 
         # Trace C: completely different driving style (heavy braking, low throttle)
@@ -156,9 +158,7 @@ class TestLapEmbedder:
 
         dist_ab = np.linalg.norm(e_a - e_b)
         dist_ac = np.linalg.norm(e_a - e_c)
-        assert dist_ab < dist_ac, (
-            f"Similar laps should be closer: dist(a,b)={dist_ab:.4f} >= dist(a,c)={dist_ac:.4f}"
-        )
+        assert dist_ab < dist_ac, f"Similar laps should be closer: dist(a,b)={dist_ab:.4f} >= dist(a,c)={dist_ac:.4f}"
 
     def test_different_seeds_different_projections(self):
         telem = _make_telemetry(500)

@@ -32,9 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.query_understanding = QueryUnderstanding(ollama_client=ollama_client)
     app.state.context_assembler = ContextAssembler(oracle_pool=pool)
     app.state.response_generator = ResponseGenerator(ollama_client=ollama_client)
-    app.state.agent = RaceEngineerAgent(
-        pool=pool, ollama_client=ollama_client, model=settings.ollama_model
-    )
+    app.state.agent = RaceEngineerAgent(pool=pool, ollama_client=ollama_client, model=settings.ollama_model)
 
     try:
         yield

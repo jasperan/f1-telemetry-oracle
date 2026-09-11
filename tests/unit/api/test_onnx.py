@@ -47,9 +47,7 @@ class TestScoreRegression:
     @pytest.mark.asyncio
     async def test_returns_float(self):
         pool = FakePool(cursor=FakeCursor(fetchone_result=(62.5,)))
-        value = await score_regression(
-            pool, "TIRE_GRIP_MODEL", {"TIRE_AGE_LAPS": 10, "TRACK_TEMP_C": 30.0}
-        )
+        value = await score_regression(pool, "TIRE_GRIP_MODEL", {"TIRE_AGE_LAPS": 10, "TRACK_TEMP_C": 30.0})
         assert value == 62.5
 
     @pytest.mark.asyncio

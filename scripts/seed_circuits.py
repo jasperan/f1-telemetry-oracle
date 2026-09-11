@@ -32,14 +32,14 @@ CIRCUITS = [
         "lat": 45.6156,
         "lng": 9.2811,
         "coordinates": [
-            [9.2724, 45.6186],   # Variante del Rettifilo
-            [9.2809, 45.6213],   # Curva Grande approach
-            [9.2890, 45.6208],   # Curva Grande exit
-            [9.2899, 45.6150],   # Lesmo 1
-            [9.2876, 45.6100],   # Variante Ascari
-            [9.2811, 45.6097],   # Curve di Ascari exit
-            [9.2753, 45.6126],   # Parabolica entry
-            [9.2724, 45.6156],   # Parabolica exit (back to start)
+            [9.2724, 45.6186],  # Variante del Rettifilo
+            [9.2809, 45.6213],  # Curva Grande approach
+            [9.2890, 45.6208],  # Curva Grande exit
+            [9.2899, 45.6150],  # Lesmo 1
+            [9.2876, 45.6100],  # Variante Ascari
+            [9.2811, 45.6097],  # Curve di Ascari exit
+            [9.2753, 45.6126],  # Parabolica entry
+            [9.2724, 45.6156],  # Parabolica exit (back to start)
         ],
     },
     {
@@ -70,15 +70,15 @@ CIRCUITS = [
         "lat": 50.4372,
         "lng": 5.9714,
         "coordinates": [
-            [5.9714, 50.4372],   # La Source
-            [5.9763, 50.4367],   # Eau Rouge approach
-            [5.9785, 50.4380],   # Raidillon
-            [5.9896, 50.4424],   # Les Combes
-            [5.9940, 50.4380],   # Malmedy / Rivage
-            [5.9830, 50.4320],   # Pouhon
-            [5.9714, 50.4335],   # Stavelot
-            [5.9680, 50.4350],   # Blanchimont
-            [5.9714, 50.4372],   # Bus Stop back to La Source
+            [5.9714, 50.4372],  # La Source
+            [5.9763, 50.4367],  # Eau Rouge approach
+            [5.9785, 50.4380],  # Raidillon
+            [5.9896, 50.4424],  # Les Combes
+            [5.9940, 50.4380],  # Malmedy / Rivage
+            [5.9830, 50.4320],  # Pouhon
+            [5.9714, 50.4335],  # Stavelot
+            [5.9680, 50.4350],  # Blanchimont
+            [5.9714, 50.4372],  # Bus Stop back to La Source
         ],
     },
     {
@@ -147,10 +147,12 @@ async def seed():
             continue
 
         # Build GeoJSON-like geometry
-        geometry = json.dumps({
-            "type": "LineString",
-            "coordinates": c["coordinates"],
-        })
+        geometry = json.dumps(
+            {
+                "type": "LineString",
+                "coordinates": c["coordinates"],
+            }
+        )
 
         await cursor.execute(
             """

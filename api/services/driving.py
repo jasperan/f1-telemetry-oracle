@@ -134,8 +134,7 @@ async def embed_lap_sectors(pool, lap_id: str) -> list[np.ndarray] | None:
         await cursor.execute("DELETE FROM lap_sector_embeddings WHERE lap_id = :1", [lap_id])
         for sector_no, emb in enumerate(embeddings, start=1):
             await cursor.execute(
-                "INSERT INTO lap_sector_embeddings (lap_id, sector_no, sector_embedding) "
-                "VALUES (:1, :2, :3)",
+                "INSERT INTO lap_sector_embeddings (lap_id, sector_no, sector_embedding) VALUES (:1, :2, :3)",
                 [lap_id, sector_no, _vector_to_str(emb)],
             )
         await conn.commit()
@@ -248,11 +247,13 @@ async def driving_twin(
     for code, sims in driver_scores.items():
         if not sims:
             continue
-        ranked.append({
-            "driver_code": code,
-            "mean_similarity": round(float(np.mean(sims)), 4),
-            "best_sector_similarity": round(float(np.min(sims)), 4),
-        })
+        ranked.append(
+            {
+                "driver_code": code,
+                "mean_similarity": round(float(np.mean(sims)), 4),
+                "best_sector_similarity": round(float(np.min(sims)), 4),
+            }
+        )
     ranked.sort(key=lambda r: r["mean_similarity"])
 
     overall_twin = ranked[0] if ranked else None
