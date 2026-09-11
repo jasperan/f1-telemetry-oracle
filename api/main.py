@@ -53,10 +53,12 @@ def create_app() -> FastAPI:
     )
 
     # CORS — allow frontend dev server
+    # The explicit localhost allowlist is used in every environment: a wildcard here would let
+    # any website the user visits read this API, which has no authentication of its own.
     allowed_origins = ["http://localhost:3100", "http://127.0.0.1:3100"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins if settings.app_env != "development" else ["*"],
+        allow_origins=allowed_origins,
         allow_credentials=settings.app_env != "development",
         allow_methods=["*"],
         allow_headers=["*"],

@@ -7,7 +7,7 @@ services:
       APP_USER: f1app
       APP_USER_PASSWORD: f1app
     ports:
-      - "1525:1521"
+      - "127.0.0.1:1525:1521"
     volumes:
       - oracle-data:/opt/oracle/oradata
     healthcheck:
@@ -21,7 +21,7 @@ services:
     image: ollama/ollama:latest
     container_name: f1-ollama
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama-data:/root/.ollama
     deploy:
@@ -38,7 +38,7 @@ services:
       dockerfile: Dockerfile
     container_name: f1-api
     ports:
-      - "8100:8000"
+      - "127.0.0.1:8100:8000"
     env_file:
       - .env
     depends_on:
@@ -53,7 +53,7 @@ services:
       dockerfile: Dockerfile
     container_name: f1-frontend
     ports:
-      - "3100:3000"
+      - "127.0.0.1:3100:3000"
     depends_on:
       - api
 
