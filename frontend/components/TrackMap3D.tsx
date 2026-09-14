@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Line, Text } from "@react-three/drei";
+import { OrbitControls, Line, Html } from "@react-three/drei";
 import * as THREE from "three";
 import clsx from "clsx";
 import { useStore, CircuitPoint } from "@/lib/store";
@@ -51,7 +51,7 @@ function TrackLine({
     return (
       <Line
         points={points}
-        color="#3a3a44"
+        color="#92a79e"
         lineWidth={3}
         dashed={false}
       />
@@ -129,15 +129,9 @@ function SectorMarkers({ points }: { points: THREE.Vector3[] }) {
             <planeGeometry args={[0.05, 0.8]} />
             <meshBasicMaterial color="#d4a845" transparent opacity={0.6} />
           </mesh>
-          <Text
-            position={[0, 0.5, 0]}
-            fontSize={0.2}
-            color="#d4a845"
-            anchorX="center"
-            anchorY="bottom"
-          >
-            {`S${i + 1}`}
-          </Text>
+          <Html position={[0, 0.5, 0]} center style={{ pointerEvents: "none" }}>
+            <span className="track-sector-label">{`S${i + 1} ≈`}</span>
+          </Html>
         </group>
       ))}
     </>
@@ -182,6 +176,7 @@ export default function TrackMap3D() {
   } = useStore();
 
   const [loading, setLoading] = useState(false);
+  const [usingPlaceholder, setUsingPlaceholder] = useState(false);
   const [heatmapData, setHeatmapData] = useState<number[]>([]);
 
   // Fetch circuit geometry
@@ -199,10 +194,12 @@ export default function TrackMap3D() {
               z: p[2] ?? 0,
             }))
           );
+          setUsingPlaceholder(false);
         } else {
           throw new Error("API unavailable");
         }
       } catch {
+        setUsingPlaceholder(true);
         // Use placeholder circuit (oval)
         const pts: CircuitPoint[] = [];
         for (let i = 0; i < 100; i++) {
@@ -254,6 +251,7 @@ export default function TrackMap3D() {
         </div>
       </div>
 
+      {usingPlaceholder && <p className="px-4 py-2 text-data-xs text-race-text-secondary">Illustrative circuit · geometry unavailable</p>}
       <div className="flex-1 min-h-0">
         {loading ? (
           <div className="h-full flex items-center justify-center">

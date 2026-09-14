@@ -2,6 +2,21 @@
 
 AI-powered F1 race engineer that compares your sim telemetry to real F1 data, backed by **Oracle Database 23ai Free** with Vector Search, Spatial, JSON Duality Views, and in-database ONNX models.
 
+## Race control, redesigned
+
+A readable six-panel race desk with responsive layouts, a connection-aware header, clearer telemetry traces, and in-browser track labels that no longer require a font CDN. The chat panel scrolls its own history without moving the dashboard.
+
+![F1 Telemetry Oracle race desk with simulated telemetry](docs/visuals/telemetry.jpg)
+
+<details><summary>Waiting for telemetry · mobile race desk</summary>
+
+![F1 Telemetry Oracle disconnected state](docs/visuals/desktop.jpg)
+<img src="docs/visuals/mobile.jpg" alt="F1 race dashboard on a narrow screen" width="320">
+
+</details>
+
+Actual browser captures with synthetic telemetry. The fallback circuit is labeled illustrative, sector markers are approximate, and the strategy panel shows its existing heuristic fallback. These are not live laps or database predictions. [Visual notes](docs/visuals/README.md).
+
 ## Architecture
 
 ```

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./race-control.css";
+import ConnectionStatus from "@/components/ConnectionStatus";
 
 export const metadata: Metadata = {
   title: "F1 Telemetry Oracle -- Race Engineer AI",
@@ -43,22 +45,17 @@ export default function RootLayout({
               <h1 className="font-sans text-[0.9rem] font-semibold tracking-tight text-race-text">
                 F1 Telemetry Oracle
               </h1>
-              <span className="text-data-xs text-race-muted/60 font-mono font-medium tracking-wide">
+              <span className="hidden sm:inline text-data-xs text-race-muted/60 font-mono font-medium tracking-wide">
                 Race Engineer AI
               </span>
             </div>
             <div className="ml-auto flex items-center gap-5">
               <div id="session-selector" />
-              <div className="flex items-center gap-2 status-pill">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent-positive" />
-                <span className="text-[0.65rem] font-mono text-race-muted tracking-wider font-medium">
-                  CONNECTED
-                </span>
-              </div>
+              <ConnectionStatus />
             </div>
           </nav>
         </header>
-        <main id="main-content" className="h-[calc(100dvh-3.5rem)]">{children}</main>
+        <main id="main-content" className="race-content">{children}</main>
       </body>
     </html>
   );

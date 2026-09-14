@@ -243,7 +243,8 @@ export default function RaceEngineerChat() {
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const messages = messagesEndRef.current?.parentElement;
+    if (messages) messages.scrollTop = messages.scrollHeight;
   }, [chatMessages, isChatStreaming]);
 
   const handleSubmit = useCallback(

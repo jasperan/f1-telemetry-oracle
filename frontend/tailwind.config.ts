@@ -12,13 +12,13 @@ const config: Config = {
       colors: {
         // Core dark racing palette (warm-tinted charcoals)
         race: {
-          bg: "#0c0c0e",
-          surface: "#131316",
-          card: "#1a1a1f",
-          border: "#26262e",
-          muted: "#6b6b78",
-          text: "#e8e8ed",
-          "text-secondary": "#a0a0ae",
+          bg: "#121516",
+          surface: "#191e20",
+          card: "#1b2123",
+          border: "#354044",
+          muted: "#a1ada7",
+          text: "#eee9dc",
+          "text-secondary": "#bbc4bb",
         },
         // Unified accent system (desaturated for premium feel)
         accent: {
@@ -48,7 +48,7 @@ const config: Config = {
           throttle: "#45d48a",
           brake: "#e05555",
           steering: "#d4a845",
-          gear: "#9b7ee8",
+          gear: "#d3aa75",
           drs: "#d47a3c",
           delta: {
             positive: "#e05555",

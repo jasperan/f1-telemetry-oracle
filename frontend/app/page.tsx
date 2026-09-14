@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import RaceOverview from "@/components/RaceOverview";
 
 // Dynamic imports to avoid SSR issues with WebSocket/Three.js/Recharts
 const LiveTelemetry = dynamic(() => import("@/components/LiveTelemetry"), {
@@ -50,7 +51,7 @@ function PanelSkeleton({ label, index = 0 }: { label: string; index?: number }) 
 
 export default function Dashboard() {
   return (
-    <div className="h-full grid grid-cols-1 md:grid-cols-3 grid-rows-6 md:grid-rows-2 gap-1.5 p-1.5 bg-race-bg">
+    <><RaceOverview /><div className="race-grid">
       {/* Row 1: Live Telemetry | 3D Track Map | AI Race Engineer Chat */}
       <section className="min-h-0 animate-fade-in-up stagger-1" style={{ animationFillMode: "backwards" }}>
         <LiveTelemetry />
@@ -72,6 +73,6 @@ export default function Dashboard() {
       <section className="min-h-0 animate-fade-in-up stagger-6" style={{ animationFillMode: "backwards" }}>
         <HistoricalExplorer />
       </section>
-    </div>
+    </div></>
   );
 }

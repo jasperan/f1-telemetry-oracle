@@ -268,7 +268,7 @@ export default function LiveTelemetry() {
             max={15000}
             label="RPM"
             unit="RPM"
-            color="#9b7ee8"
+            color="#d3aa75"
             size="md"
           />
         </div>
