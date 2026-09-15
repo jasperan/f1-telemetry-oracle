@@ -225,6 +225,52 @@ Interactive API docs are available at `http://localhost:8100/docs` (Swagger UI) 
 | `/ws/chat` | WebSocket | Streaming chat responses |
 | `/health` | GET | Health check |
 
+## Terminal UI (Go)
+
+`gotui/` is an additional way to run this project: a terminal console built on
+[charm.land/bubbletea/v2](https://github.com/charmbracelet/bubbletea) with
+`huh` forms. It is a read-only peer of the Next.js dashboard and talks to the
+same FastAPI service, so a terminal user and a browser user see identical
+numbers -- it holds no telemetry, comparison or strategy logic of its own.
+
+The compare view is the centrepiece: the sector table comes from the recorded
+sector times, and the distance-segment panel is derived from the service's
+distance-aligned speed deltas. The two are labelled differently on purpose,
+because only the first is real elapsed time.
+
+```bash
+cd gotui && go build -o f1-telemetry-tui ./cmd/f1-telemetry-tui
+
+# Full-screen UI (needs a terminal; the API must be running)
+./f1-telemetry-tui
+./f1-telemetry-tui --base-url http://127.0.0.1:8100
+./f1-telemetry-tui --start-service          # launch the API first, then connect
+
+# One-shot, pipeable actions
+./f1-telemetry-tui --health
+./f1-telemetry-tui --circuits
+./f1-telemetry-tui --sessions --source sim
+./f1-telemetry-tui --laps --session sim_2025_bahrain_r
+./f1-telemetry-tui --compare sim_2025_bahrain_l12,real_2025_bahrain_l12
+./f1-telemetry-tui --sim-vs-real sim_2025_bahrain_l12
+./f1-telemetry-tui --driving-twin sim_2025_bahrain_l12
+./f1-telemetry-tui --strategy-sim --laps-total 53 --track-temp 31
+./f1-telemetry-tui --ask "where am I losing time?"
+
+# Machine-readable
+./f1-telemetry-tui --compare A,B --json
+```
+
+In the full-screen UI: arrows move, `enter` opens, `esc` goes back, `q` quits.
+On the Laps screen `c` picks a lap and `c` again compares the pair; `enter`
+opens the driving-twin analysis for the highlighted lap.
+
+Requires Go 1.25+ and a running API. If the API is not up you get the exact
+commands to start it; if it is up but Oracle is not, the message says so
+instead, because the two need different fixes. `ACCESSIBLE=1` selects plain
+output: the embedded forms cannot serve a screen reader, so claiming otherwise
+would be worse than falling back.
+
 ## Project Structure
 
 ```
@@ -262,6 +308,9 @@ f1-telemetry-oracle/
 │   ├── app/                    # Pages + layout (dark racing theme)
 │   ├── components/             # 6 dashboard panels
 │   └── lib/                    # WebSocket hook, Zustand store
+├── gotui/                      # Go terminal UI (Bubble Tea v2 + huh)
+│   ├── cmd/f1-telemetry-tui/    # flags, scripted actions, UI entry point
+│   └── internal/               # api client, analysis, tui, session, huhstyle
 ├── scripts/                    # Seed + model loading utilities
 ├── tests/
 │   ├── unit/                   # Fast tests, no external deps
