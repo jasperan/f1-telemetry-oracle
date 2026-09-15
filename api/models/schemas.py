@@ -273,9 +273,7 @@ class StrategySimRequest(BaseModel):
     fuel_start_kg: float = Field(110.0, ge=0.0, le=150.0, description="Starting fuel load")
     n_sims: int = Field(500, ge=50, le=5000, description="Simulations per strategy")
     seed: int = 42
-    compounds: list[str] | None = Field(
-        default=None, description="Candidate compounds (default SOFT/MEDIUM/HARD)"
-    )
+    compounds: list[str] | None = Field(default=None, description="Candidate compounds (default SOFT/MEDIUM/HARD)")
 
 
 class StrategySimStrategy(BaseModel):

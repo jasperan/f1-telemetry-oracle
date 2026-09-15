@@ -69,7 +69,7 @@ async def main(args: argparse.Namespace) -> None:
         on_frame=on_frame,
     )
 
-    transport, port = await listener.start()
+    _transport, port = await listener.start()
     logger.info("Listening for F1 24 UDP on %s:%d", args.host, port)
 
     try:

@@ -90,7 +90,9 @@ class LapEmbedder:
 
         logger.info(
             "LapEmbedder initialized: %d -> %d dims (seed=%d)",
-            self._input_dim, output_dim, seed,
+            self._input_dim,
+            output_dim,
+            seed,
         )
 
     def embed(self, telemetry: dict[str, np.ndarray]) -> np.ndarray:

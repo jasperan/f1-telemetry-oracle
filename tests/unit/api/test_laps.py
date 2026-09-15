@@ -21,37 +21,93 @@ from api.routers.laps import router as laps_router
 NOW = datetime(2025, 3, 15, 12, 0, 0)
 
 SAMPLE_LAP = (
-    "lap-001", "sess-001", "driver-ver", 5,
-    28500, 33200, 24800, 86500,
-    "SOFT", 3, 42.5, 75.0,
-    1, 1, NOW,
+    "lap-001",
+    "sess-001",
+    "driver-ver",
+    5,
+    28500,
+    33200,
+    24800,
+    86500,
+    "SOFT",
+    3,
+    42.5,
+    75.0,
+    1,
+    1,
+    NOW,
 )
 
 SAMPLE_LAP_2 = (
-    "lap-002", "sess-001", "driver-ham", 5,
-    28700, 33400, 25000, 87100,
-    "MEDIUM", 8, 38.0, 80.0,
-    1, 2, NOW,
+    "lap-002",
+    "sess-001",
+    "driver-ham",
+    5,
+    28700,
+    33400,
+    25000,
+    87100,
+    "MEDIUM",
+    8,
+    38.0,
+    80.0,
+    1,
+    2,
+    NOW,
 )
 
 SAMPLE_FRAME = (
-    "frame-001", "lap-001", 1000, 150.5,
-    285.3, 0.95, 0.0, -0.02,
-    7, 11200, 1,
-    100.5, 200.3, 10.1,
-    0.15, -0.30,
-    95.0, 97.0, 92.0, 94.0,
-    450.0, 460.0, 420.0, 430.0,
+    "frame-001",
+    "lap-001",
+    1000,
+    150.5,
+    285.3,
+    0.95,
+    0.0,
+    -0.02,
+    7,
+    11200,
+    1,
+    100.5,
+    200.3,
+    10.1,
+    0.15,
+    -0.30,
+    95.0,
+    97.0,
+    92.0,
+    94.0,
+    450.0,
+    460.0,
+    420.0,
+    430.0,
 )
 
 SAMPLE_FRAME_2 = (
-    "frame-002", "lap-001", 1100, 180.2,
-    290.1, 1.0, 0.0, 0.01,
-    7, 11500, 0,
-    110.5, 210.3, 10.2,
-    0.10, -0.25,
-    96.0, 98.0, 93.0, 95.0,
-    455.0, 465.0, 425.0, 435.0,
+    "frame-002",
+    "lap-001",
+    1100,
+    180.2,
+    290.1,
+    1.0,
+    0.0,
+    0.01,
+    7,
+    11500,
+    0,
+    110.5,
+    210.3,
+    10.2,
+    0.10,
+    -0.25,
+    96.0,
+    98.0,
+    93.0,
+    95.0,
+    455.0,
+    465.0,
+    425.0,
+    435.0,
 )
 
 
@@ -221,7 +277,7 @@ class TestSimilarLaps:
         # First call: get target embedding
         mock_pool._cursor.queue_result([("some_embedding_data",)])
         # Second call: vector search results (lap columns + distance)
-        similar_row = SAMPLE_LAP_2 + (0.15,)
+        similar_row = (*SAMPLE_LAP_2, 0.15)
         mock_pool._cursor.queue_result([similar_row])
         resp = client.get("/api/laps/lap-001/similar?top_n=1")
         assert resp.status_code == 200

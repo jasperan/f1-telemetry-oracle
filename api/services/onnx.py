@@ -14,6 +14,7 @@ to its heuristic path.
 from __future__ import annotations
 
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,21 @@ async def model_exists(pool, model_name: str) -> bool:
         return False
 
 
+# Names that are interpolated into SQL text rather than bound as parameters must look like
+# Oracle identifiers. Today every caller passes the module constants above or a literal alias
+# from _tire_inputs, but nothing enforced that: a caller passing a request-derived string
+# would have been able to alter the statement.
+_IDENT_RE = re.compile(r"^[A-Z_][A-Z0-9_]{0,127}$")
+
+
+def _ident(name: object) -> str | None:
+    """Return *name* when it is a safe Oracle identifier, otherwise None (and log it)."""
+    if isinstance(name, str) and _IDENT_RE.match(name):
+        return name
+    logger.warning("refusing to interpolate a non-identifier into SQL: %r", name)
+    return None
+
+
 async def score_regression(
     pool,
     model_name: str,
@@ -88,15 +104,22 @@ async def score_regression(
     if not inputs:
         return None
 
+    model = _ident(model_name)
+    if model is None:
+        return None
+
     binds: dict[str, object] = {}
     using_parts: list[str] = []
     for i, (col, value) in enumerate(inputs.items()):
+        alias = _ident(col)
+        if alias is None:
+            return None
         bind = f"b{i}"
-        using_parts.append(f":{bind} AS {col}")
+        using_parts.append(f":{bind} AS {alias}")
         binds[bind] = value
 
     using_clause = ", ".join(using_parts)
-    sql = f"SELECT PREDICTION({model_name} USING {using_clause}) FROM dual"
+    sql = f"SELECT PREDICTION({model} USING {using_clause}) FROM dual"
 
     try:
         async with pool.connection() as conn:
@@ -121,11 +144,15 @@ async def embed_text(pool, model_name: str, text: str) -> list[float] | None:
     Returns:
         Embedding vector as a list of floats, or None on failure.
     """
+    model = _ident(model_name)
+    if model is None:
+        return None
+
     try:
         async with pool.connection() as conn:
             cursor = conn.cursor()
             await cursor.execute(
-                f"SELECT VECTOR_EMBEDDING({model_name} USING :text AS DATA) FROM dual",
+                f"SELECT VECTOR_EMBEDDING({model} USING :text AS DATA) FROM dual",
                 {"text": text},
             )
             row = await cursor.fetchone()

@@ -106,19 +106,13 @@ def build_tire_degradation_models(
 
     x, grip, laps = _synthetic_tire_dataset(n_samples, random_state)
 
-    grip_model = RandomForestRegressor(
-        n_estimators=50, max_depth=10, random_state=random_state
-    )
+    grip_model = RandomForestRegressor(n_estimators=50, max_depth=10, random_state=random_state)
     grip_model.fit(x, grip)
 
-    laps_model = RandomForestRegressor(
-        n_estimators=50, max_depth=10, random_state=random_state
-    )
+    laps_model = RandomForestRegressor(n_estimators=50, max_depth=10, random_state=random_state)
     laps_model.fit(x, laps)
 
-    logger.info(
-        "Trained tire degradation models on %d synthetic samples", n_samples
-    )
+    logger.info("Trained tire degradation models on %d synthetic samples", n_samples)
     return (grip_model, laps_model), TIRE_FEATURES
 
 

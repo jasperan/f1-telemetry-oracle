@@ -174,7 +174,7 @@ class TestOpenF1CollectorBatch:
         assert all(isinstance(lap, NormalizedLap) for lap in laps)
 
         # Check VER lap 2
-        ver_lap2 = [lap for lap in laps if lap.driver_code == "VER" and lap.lap_number == 2][0]
+        ver_lap2 = next(lap for lap in laps if lap.driver_code == "VER" and lap.lap_number == 2)
         assert ver_lap2.source == "openf1"
         assert ver_lap2.sector1_ms == 27123
         assert ver_lap2.sector2_ms == 31456
@@ -184,7 +184,7 @@ class TestOpenF1CollectorBatch:
         assert ver_lap2.is_valid is True
 
         # Pit out lap should be marked invalid
-        ver_lap1 = [lap for lap in laps if lap.driver_code == "VER" and lap.lap_number == 1][0]
+        ver_lap1 = next(lap for lap in laps if lap.driver_code == "VER" and lap.lap_number == 1)
         assert ver_lap1.is_valid is False
 
     @respx.mock
@@ -254,7 +254,7 @@ class TestOpenF1CollectorBatch:
         """Duplicate records with same driver+lap+timestamp are deduplicated."""
         base = "https://api.openf1.org/v1"
 
-        duplicate_laps = MOCK_LAPS_RESPONSE + [MOCK_LAPS_RESPONSE[1]]  # lap 2 duplicated
+        duplicate_laps = [*MOCK_LAPS_RESPONSE, MOCK_LAPS_RESPONSE[1]]  # lap 2 duplicated
 
         respx.get(f"{base}/laps", params={"session_key": "9876"}).mock(
             return_value=httpx.Response(200, json=duplicate_laps)

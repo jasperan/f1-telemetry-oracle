@@ -72,21 +72,17 @@ def _align_telemetry(
     deltas: list[DeltaPoint] = []
     d = d_start
     while d <= d_end:
-        deltas.append(DeltaPoint(
-            distance_m=round(d, 2),
-            speed_delta=round(
-                _interpolate_at(dist_a, speed_a, d) - _interpolate_at(dist_b, speed_b, d), 3
-            ),
-            throttle_delta=round(
-                _interpolate_at(dist_a, throttle_a, d) - _interpolate_at(dist_b, throttle_b, d), 4
-            ),
-            brake_delta=round(
-                _interpolate_at(dist_a, brake_a, d) - _interpolate_at(dist_b, brake_b, d), 4
-            ),
-            steering_delta=round(
-                _interpolate_at(dist_a, steer_a, d) - _interpolate_at(dist_b, steer_b, d), 4
-            ),
-        ))
+        deltas.append(
+            DeltaPoint(
+                distance_m=round(d, 2),
+                speed_delta=round(_interpolate_at(dist_a, speed_a, d) - _interpolate_at(dist_b, speed_b, d), 3),
+                throttle_delta=round(
+                    _interpolate_at(dist_a, throttle_a, d) - _interpolate_at(dist_b, throttle_b, d), 4
+                ),
+                brake_delta=round(_interpolate_at(dist_a, brake_a, d) - _interpolate_at(dist_b, brake_b, d), 4),
+                steering_delta=round(_interpolate_at(dist_a, steer_a, d) - _interpolate_at(dist_b, steer_b, d), 4),
+            )
+        )
         d += step_m
 
     return deltas
@@ -117,8 +113,7 @@ async def _fetch_frames(pool: Any, lap_id: str) -> list[tuple]:
     async with pool.connection() as conn:
         cursor = conn.cursor()
         await cursor.execute(
-            f"SELECT {_FRAME_COLUMNS} FROM telemetry_frames "
-            f"WHERE lap_id = :1 ORDER BY distance_m",
+            f"SELECT {_FRAME_COLUMNS} FROM telemetry_frames WHERE lap_id = :1 ORDER BY distance_m",
             [lap_id],
         )
         return await cursor.fetchall()

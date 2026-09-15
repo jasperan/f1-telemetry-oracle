@@ -32,7 +32,8 @@ async def test_lap_duality_view_insert_and_read(pool: OraclePool):
             [circuit_id, "Monza", "Italy"],
         )
         await cursor.execute(
-            "INSERT INTO drivers (driver_id, code, first_name, last_name, nationality, is_sim_player) VALUES (:1, :2, :3, :4, :5, :6)",
+            "INSERT INTO drivers (driver_id, code, first_name, last_name, nationality, is_sim_player) "
+            "VALUES (:1, :2, :3, :4, :5, :6)",
             [driver_id, "TST", "Test", "Driver", "Testland", 0],
         )
         await cursor.execute(
@@ -42,19 +43,21 @@ async def test_lap_duality_view_insert_and_read(pool: OraclePool):
         await conn.commit()
 
         # Insert via duality view
-        lap_json = json.dumps({
-            "_id": lap_id,
-            "session_id": session_id,
-            "driver_id": driver_id,
-            "lap_number": 7,
-            "sector1_ms": 28500,
-            "sector2_ms": 33200,
-            "sector3_ms": 24100,
-            "lap_time_ms": 85800,
-            "tire_compound": "SOFT",
-            "tire_age_laps": 3,
-            "is_valid": 1,
-        })
+        lap_json = json.dumps(
+            {
+                "_id": lap_id,
+                "session_id": session_id,
+                "driver_id": driver_id,
+                "lap_number": 7,
+                "sector1_ms": 28500,
+                "sector2_ms": 33200,
+                "sector3_ms": 24100,
+                "lap_time_ms": 85800,
+                "tire_compound": "SOFT",
+                "tire_age_laps": 3,
+                "is_valid": 1,
+            }
+        )
 
         try:
             await cursor.execute("INSERT INTO lap_dv VALUES (:1)", [lap_json])

@@ -56,19 +56,26 @@ class ErgastCollector:
                     response = await client.get(url)
 
                     if response.status_code == 429:
-                        delay = self._retry_delay * (2 ** attempt)
+                        delay = self._retry_delay * (2**attempt)
                         logger.warning(
                             "Rate limited (429) on %s, retry %d/%d in %.1fs",
-                            url, attempt + 1, self._max_retries, delay,
+                            url,
+                            attempt + 1,
+                            self._max_retries,
+                            delay,
                         )
                         await asyncio.sleep(delay)
                         continue
 
                     if response.status_code >= 500:
-                        delay = self._retry_delay * (2 ** attempt)
+                        delay = self._retry_delay * (2**attempt)
                         logger.warning(
                             "Server error (%d) on %s, retry %d/%d in %.1fs",
-                            response.status_code, url, attempt + 1, self._max_retries, delay,
+                            response.status_code,
+                            url,
+                            attempt + 1,
+                            self._max_retries,
+                            delay,
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -78,10 +85,13 @@ class ErgastCollector:
 
                 except httpx.TimeoutException as exc:
                     last_exc = exc
-                    delay = self._retry_delay * (2 ** attempt)
+                    delay = self._retry_delay * (2**attempt)
                     logger.warning(
                         "Timeout on %s, retry %d/%d in %.1fs",
-                        url, attempt + 1, self._max_retries, delay,
+                        url,
+                        attempt + 1,
+                        self._max_retries,
+                        delay,
                     )
                     await asyncio.sleep(delay)
 
@@ -127,19 +137,25 @@ class ErgastCollector:
         results = race.get("Results", [])
         laps: list[NormalizedLap] = []
 
-        for idx, result in enumerate(results):
+        for idx, _result in enumerate(results):
             try:
                 lap = normalize_ergast_result(race, driver_index=idx)
                 laps.append(lap)
             except (KeyError, ValueError, IndexError) as exc:
                 logger.warning(
                     "Failed to normalize result %d for %d/%d: %s",
-                    idx, season, round_num, exc,
+                    idx,
+                    season,
+                    round_num,
+                    exc,
                 )
 
         logger.info(
             "Fetched %d results for %d round %d (%s)",
-            len(laps), season, round_num, race.get("raceName", "?"),
+            len(laps),
+            season,
+            round_num,
+            race.get("raceName", "?"),
         )
         return laps
 
@@ -192,7 +208,10 @@ class ErgastCollector:
 
         logger.info(
             "Fetched %d qualifying results for %d round %d (%s)",
-            len(laps), season, round_num, race.get("raceName", "?"),
+            len(laps),
+            season,
+            round_num,
+            race.get("raceName", "?"),
         )
         return laps
 
@@ -230,4 +249,4 @@ def _parse_qualifying_time(time_str: str) -> int | None:
         total_seconds = int(minutes) * 60 + seconds
     else:
         total_seconds = float(parts[0])
-    return int(round(total_seconds * 1000))
+    return round(total_seconds * 1000)

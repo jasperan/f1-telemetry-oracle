@@ -37,9 +37,7 @@ def _row_to_lap(row: tuple) -> LapResponse:
     )
 
 
-_LAP_COLUMNS_ALIASED = ", ".join(
-    f"l.{col.strip()}" for col in _LAP_COLUMNS.split(",")
-)
+_LAP_COLUMNS_ALIASED = ", ".join(f"l.{col.strip()}" for col in _LAP_COLUMNS.split(","))
 
 
 def _row_to_frame(row: tuple) -> TelemetryFrameResponse:
@@ -86,10 +84,7 @@ async def list_laps(
 
     # Always join sessions so every filter can use stable l./s. prefixes
     # (laps.session_id is a FK to sessions, so the join is row-preserving).
-    base_sql = (
-        f"SELECT {_LAP_COLUMNS_ALIASED} "
-        f"FROM laps l JOIN sessions s ON l.session_id = s.session_id"
-    )
+    base_sql = f"SELECT {_LAP_COLUMNS_ALIASED} FROM laps l JOIN sessions s ON l.session_id = s.session_id"
 
     # Collect (column, value) filter pairs, then assign positional bind
     # indexes in order so the SQL and params list stay in lockstep.

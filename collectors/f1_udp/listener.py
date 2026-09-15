@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable, Coroutine
-from typing import Any
+from typing import Any, ClassVar
 
 from collectors.f1_udp.decoder import (
     TRACK_MAP,
@@ -45,12 +45,18 @@ class _F1Protocol(asyncio.DatagramProtocol):
     def __init__(self, listener: F1UDPListener) -> None:
         self._listener = listener
 
+    _pending: ClassVar[set[asyncio.Task]] = set()
+
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         """Called by asyncio when a UDP packet arrives."""
         try:
             header, decoded = decode_packet(data)
             if decoded is not None:
-                asyncio.ensure_future(self._listener._handle_packet(header, decoded))
+                # Keep a reference: a bare ensure_future() task can be garbage-collected
+                # before it runs, and the callback drops it again when it finishes.
+                task = asyncio.ensure_future(self._listener._handle_packet(header, decoded))
+                self._pending.add(task)
+                task.add_done_callback(self._pending.discard)
         except Exception as exc:
             logger.warning("Failed to decode packet from %s: %s", addr, exc)
 
@@ -102,7 +108,7 @@ class F1UDPListener:
             Tuple of (transport, actual_port) -- actual_port is useful when port=0
         """
         loop = asyncio.get_event_loop()
-        transport, protocol = await loop.create_datagram_endpoint(
+        transport, _protocol = await loop.create_datagram_endpoint(
             lambda: _F1Protocol(self),
             local_addr=(self._host, self._port),
         )

@@ -26,17 +26,39 @@ NOW = datetime(2025, 3, 15, 12, 0, 0)
 #   tire_compound, tire_age_laps, fuel_load_kg, ers_deploy_pct,
 #   is_valid, position, created_at
 SAMPLE_SIM_LAP = (
-    "lap-sim-001", "sess-sim-001", "sim-player", 5,
-    28500, 33200, 24800, 86500,
-    "SOFT", 3, 42.5, 75.0,
-    1, 1, NOW,
+    "lap-sim-001",
+    "sess-sim-001",
+    "sim-player",
+    5,
+    28500,
+    33200,
+    24800,
+    86500,
+    "SOFT",
+    3,
+    42.5,
+    75.0,
+    1,
+    1,
+    NOW,
 )
 
 SAMPLE_REAL_LAP = (
-    "lap-real-001", "sess-real-001", "driver-ver", 5,
-    28300, 33000, 24600, 85900,
-    "SOFT", 5, 40.0, 80.0,
-    1, 1, NOW,
+    "lap-real-001",
+    "sess-real-001",
+    "driver-ver",
+    5,
+    28300,
+    33000,
+    24600,
+    85900,
+    "SOFT",
+    5,
+    40.0,
+    80.0,
+    1,
+    1,
+    NOW,
 )
 
 # Telemetry frame row layout (24 columns):
@@ -45,14 +67,35 @@ SAMPLE_REAL_LAP = (
 # gear, rpm, drs, pos_x, pos_y, pos_z, g_lat, g_lon,
 # tire_temp_fl/fr/rl/rr, brake_temp_fl/fr/rl/rr
 
-def _make_frame(frame_id: str, lap_id: str, ts: int, dist: float,
-                speed: float, throttle: float, brake: float, steering: float) -> tuple:
+
+def _make_frame(
+    frame_id: str, lap_id: str, ts: int, dist: float, speed: float, throttle: float, brake: float, steering: float
+) -> tuple:
     return (
-        frame_id, lap_id, ts, dist,
-        speed, throttle, brake, steering,
-        7, 11200, 0, 100.0, 200.0, 10.0, 0.1, -0.2,
-        95.0, 97.0, 92.0, 94.0,
-        450.0, 460.0, 420.0, 430.0,
+        frame_id,
+        lap_id,
+        ts,
+        dist,
+        speed,
+        throttle,
+        brake,
+        steering,
+        7,
+        11200,
+        0,
+        100.0,
+        200.0,
+        10.0,
+        0.1,
+        -0.2,
+        95.0,
+        97.0,
+        92.0,
+        94.0,
+        450.0,
+        460.0,
+        420.0,
+        430.0,
     )
 
 

@@ -98,9 +98,7 @@ class TestMonteCarlo:
 
     @pytest.mark.asyncio
     async def test_single_stop_preferred_in_short_race(self):
-        result = await strategy.monte_carlo_strategy(
-            FakePool(), total_laps=20, n_sims=100, seed=7
-        )
+        result = await strategy.monte_carlo_strategy(FakePool(), total_laps=20, n_sims=100, seed=7)
         top = result["strategies"][0]["strategy"]
         assert len(top) == 1, "A 20-lap race should favor a single stint"
 

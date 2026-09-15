@@ -32,9 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.query_understanding = QueryUnderstanding(ollama_client=ollama_client)
     app.state.context_assembler = ContextAssembler(oracle_pool=pool)
     app.state.response_generator = ResponseGenerator(ollama_client=ollama_client)
-    app.state.agent = RaceEngineerAgent(
-        pool=pool, ollama_client=ollama_client, model=settings.ollama_model
-    )
+    app.state.agent = RaceEngineerAgent(pool=pool, ollama_client=ollama_client, model=settings.ollama_model)
 
     try:
         yield
@@ -53,10 +51,12 @@ def create_app() -> FastAPI:
     )
 
     # CORS — allow frontend dev server
+    # The explicit localhost allowlist is used in every environment: a wildcard here would let
+    # any website the user visits read this API, which has no authentication of its own.
     allowed_origins = ["http://localhost:3100", "http://127.0.0.1:3100"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins if settings.app_env != "development" else ["*"],
+        allow_origins=allowed_origins,
         allow_credentials=settings.app_env != "development",
         allow_methods=["*"],
         allow_headers=["*"],

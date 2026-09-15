@@ -81,9 +81,7 @@ def _make_style_frames(code: str, n: int = 90) -> list[tuple]:
             brake = 100 if 0.22 < progress < 0.30 else 0
             steer_amp = 0.3
         elif code == "STB":
-            brake = (
-                max(0.0, 100 * (1 - abs(progress - 0.30) / 0.12)) if progress < 0.5 else 0
-            )
+            brake = max(0.0, 100 * (1 - abs(progress - 0.30) / 0.12)) if progress < 0.5 else 0
             steer_amp = 0.6
         else:  # STS — sim lap: blend of A braking and B steering
             brake = 100 if 0.22 < progress < 0.30 else 0
@@ -119,9 +117,7 @@ async def test_driving_twin_end_to_end(pool):
             ("STB", "STYLEB", False),
             ("STS", "STYLESIM", True),
         ]:
-            await cursor.execute(
-                "SELECT COUNT(*) FROM drivers WHERE driver_id = :1", [full_id]
-            )
+            await cursor.execute("SELECT COUNT(*) FROM drivers WHERE driver_id = :1", [full_id])
             if (await cursor.fetchone())[0] == 0:
                 await cursor.execute(
                     "INSERT INTO drivers (driver_id, code, first_name, last_name, "

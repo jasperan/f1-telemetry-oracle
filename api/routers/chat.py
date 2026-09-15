@@ -212,19 +212,23 @@ async def websocket_chat(websocket: WebSocket):
                     continue
 
                 elapsed_ms = int((time.monotonic() - start) * 1000)
-                await websocket.send_json({
-                    "type": "complete",
-                    "elapsed_ms": elapsed_ms,
-                    "sources": trace.sources,
-                    "trace": trace.model_dump(),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "complete",
+                        "elapsed_ms": elapsed_ms,
+                        "sources": trace.sources,
+                        "trace": trace.model_dump(),
+                    }
+                )
 
             except Exception as exc:
                 logger.error("Chat WebSocket error: %s", exc, exc_info=True)
-                await websocket.send_json({
-                    "type": "error",
-                    "message": f"Processing error: {exc!s}",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "message": f"Processing error: {exc!s}",
+                    }
+                )
 
     except WebSocketDisconnect:
         logger.info("Chat WebSocket client disconnected")
@@ -235,11 +239,13 @@ async def websocket_chat(websocket: WebSocket):
 async def _classic_ws_stream(app, websocket: WebSocket, question: str) -> None:
     """Stream a classic RAG answer, sending intent/chunk/complete events."""
     parsed = await app.state.query_understanding.parse(question)
-    await websocket.send_json({
-        "type": "intent",
-        "intent": parsed.intent,
-        "entities": parsed.entities,
-    })
+    await websocket.send_json(
+        {
+            "type": "intent",
+            "intent": parsed.intent,
+            "entities": parsed.entities,
+        }
+    )
 
     retrieval = await app.state.context_assembler.execute_retrieval(parsed)
     context = await app.state.context_assembler.assemble(
@@ -260,14 +266,16 @@ async def _classic_ws_stream(app, websocket: WebSocket, question: str) -> None:
         await websocket.send_json({"type": "response", "content": response_text})
 
     sources = {k: len(v) for k, v in retrieval.items() if isinstance(v, list)}
-    await websocket.send_json({
-        "type": "complete",
-        "elapsed_ms": 0,
-        "sources": sources,
-        "trace": {
-            "path": "rag",
-            "intent": parsed.intent,
-            "entities": parsed.entities,
+    await websocket.send_json(
+        {
+            "type": "complete",
+            "elapsed_ms": 0,
             "sources": sources,
-        },
-    })
+            "trace": {
+                "path": "rag",
+                "intent": parsed.intent,
+                "entities": parsed.entities,
+                "sources": sources,
+            },
+        }
+    )

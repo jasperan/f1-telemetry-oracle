@@ -92,9 +92,7 @@ def cli():
     parser.add_argument("--session-key", type=int, help="OpenF1 session key to fetch")
     parser.add_argument("--year", type=int, help="Backfill all race sessions for a year")
     parser.add_argument("--live", action="store_true", help="Enable live polling mode")
-    parser.add_argument(
-        "--poll-interval", type=float, default=2.0, help="Seconds between live polls (default: 2.0)"
-    )
+    parser.add_argument("--poll-interval", type=float, default=2.0, help="Seconds between live polls (default: 2.0)")
     args = parser.parse_args()
     asyncio.run(main(args))
 

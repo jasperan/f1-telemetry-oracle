@@ -42,13 +42,13 @@ _COMPOUND_LIFESPAN: dict[str, int] = {
 }
 
 # Monte Carlo race parameters
-PIT_LOSS_S = 22.0          # median pit stop time loss (seconds)
-PIT_LOSS_SIGMA = 3.0       # pit stop variability
+PIT_LOSS_S = 22.0  # median pit stop time loss (seconds)
+PIT_LOSS_SIGMA = 3.0  # pit stop variability
 SECONDS_PER_GRIP_PCT = 0.02  # lap-time delta per grip % (approx)
-BASE_LAP_TIME_S = 85.0     # reference dry lap time at 100% grip
+BASE_LAP_TIME_S = 85.0  # reference dry lap time at 100% grip
 RAIN_PROB_PER_LAP = 0.015  # probability a rain shower starts any lap
-SC_PROB_PER_LAP = 0.010    # probability of a safety car any lap
-FUEL_LAP_COST_KG = 1.9     # fuel burned per lap
+SC_PROB_PER_LAP = 0.010  # probability of a safety car any lap
+FUEL_LAP_COST_KG = 1.9  # fuel burned per lap
 FUEL_GRIP_BONUS_KG = 0.08  # grip % gained per 10kg of fuel burned
 
 
@@ -172,9 +172,7 @@ async def pit_window(
     else:
         recommended_compound = "HARD"
 
-    undercut_viable = (
-        gap_ahead_ms is not None and gap_ahead_ms < 3000 and tire_age_laps >= base_lifespan * 0.5
-    )
+    undercut_viable = gap_ahead_ms is not None and gap_ahead_ms < 3000 and tire_age_laps >= base_lifespan * 0.5
     overcut_viable = gap_behind_ms is not None and gap_behind_ms > 2000 and tire_remaining > 3
 
     parts = [

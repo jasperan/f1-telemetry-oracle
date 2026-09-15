@@ -50,9 +50,7 @@ class TestAgentLoop:
                 return {
                     "message": {
                         "content": "",
-                        "tool_calls": [
-                            _tool_call("predict_tire_life", {"tire_compound": "SOFT", "tire_age_laps": 12})
-                        ],
+                        "tool_calls": [_tool_call("predict_tire_life", {"tire_compound": "SOFT", "tire_age_laps": 12})],
                     }
                 }
             return {"message": {"content": "You have 12 laps of life left."}}
