@@ -78,10 +78,6 @@ jobs:
         run: |
           pytest tests/unit/ -v --tb=short -m "not integration and not e2e" \
             --junitxml=reports/unit-results.xml
-        env:
-          ORACLE_DSN: localhost:1521/FREEPDB1
-          ORACLE_USER: test
-          ORACLE_PASSWORD: test
 
       - name: Upload test results
         if: always()

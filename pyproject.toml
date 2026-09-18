@@ -58,7 +58,9 @@ line-length = 120
 # telemetry_f1_2021/ is vendored third-party code (README:273 credits
 # chrishannam/Telemetry-F1-2021). Linting it produced 143 of the 169 violations that kept the
 # CI lint job red, and its style is not this project's to change.
-exclude = ["telemetry_f1_2021"]
+# articles/ is published prose whose code blocks are excerpts, not source; reformatting them
+# churns published content and kept the CI format job red.
+exclude = ["telemetry_f1_2021", "articles"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
